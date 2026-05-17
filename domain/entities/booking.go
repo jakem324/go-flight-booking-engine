@@ -1,12 +1,7 @@
 package entities
 
-type CreateBookingResult struct {
-	Booking Booking
-	Error error
-}
-
 type BookingRepository interface {
-	CreateBooking() chan CreateBookingResult
+	CreateBooking() (Booking, error)
 }
 
 type Journey struct {

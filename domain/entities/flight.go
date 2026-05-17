@@ -9,7 +9,7 @@ type SeatLockResult struct {
 }
 
 type FlightRepository interface {
-	CreateSeatLock(flightId uuid.UUID, numberOfSeats int) <- chan SeatLockResult
+	CreateSeatLock(flightId uuid.UUID, numberOfSeats int) ([]int, error)
 }
 
 type Flight struct {
@@ -22,11 +22,6 @@ func NewFlight(id uuid.UUID) Flight {
 	return Flight{ Id: id }
 }
 
-type SeatAllocationResult struct {
-	Available bool
-	Error error
-}
-
-func (flight Flight) TryAllocateSeat(*Journey) chan SeatAllocationResult {
-	return nil
+func (flight Flight) TryAllocateSeat(*Journey) (bool, error) {
+	return false, nil
 }

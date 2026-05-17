@@ -12,51 +12,21 @@ type CreatePencilBookingDto struct {
 	OutboundJourneyLegs []uuid.UUID
 }
 
-type CreatePencilBookingResultDto struct {
-	BookingId int
-	Error error
+func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
+	booking, err := service.bookingRepository.CreateBooking()	
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	seatsObtained, err := service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
+
 }
 
-func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) chan CreatePencilBookingResultDto {
-	out := make(chan CreatePencilBookingResultDto, 1)
-
-	go func() {
-		createBookingResult := <-service.bookingRepository.CreateBooking()	
-		if createBookingResult.Error != nil {
-			out <- CreatePencilBookingResultDto { 0, createBookingResult.Error }
-			return
-		}
-
-		booking := &createBookingResult.Booking
-		seatBookingResult := <- service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
-
-		//	
-		
-
-
-		//
-	}()
-
-	return out
-}
-
-type bookSeatsResult struct {
-	RequestedSeatsAvailable bool
-	Error error
-}
-
-func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) chan bookSeatsResult {
-	out := make(chan bookSeatsResult, 1)
-	go func(){
-		result := bookSeatsResult{
-			RequestedSeatsAvailable: false,
-			Error: nil,
-		}
-
+func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
-			allocationResult := <- flight.TryAllocateSeat(journey)
-			if !allocationResult.Available || allocationResult.Error != nil {
+			seatObtained, err := flight.TryAllocateSeat(journey)
+			if !seatObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 
 				// effort to avoid leaving orphan seat locks, but a background service will need 
@@ -69,24 +39,15 @@ func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLeg
 				journey.ReleaseAllSeats()	
 			}
 			
-			if allocationResult.Error != nil {
-				result.Error = allocationResult.Error
-				out <- result
-				return
+			if err != nil {
+				return false, err
 			}
 
-			if !allocationResult.Available {
-				out <- result
-				return
+			if !seatObtained {
+				return false, nil
 			}
 		}
 
-		result.RequestedSeatsAvailable = true
-		out <- result
-	}()
-
-	return out
+		return true, nil
 }
-
-
 
