@@ -48,6 +48,11 @@ type bookSeatsResult struct {
 func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) chan bookSeatsResult {
 	out := make(chan bookSeatsResult, 1)
 	go func(){
+		result := bookSeatsResult{
+			RequestedSeatsAvailable: false,
+			Error: nil,
+		}
+
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
 			allocationResult := <- flight.TryAllocateSeat(journey)
@@ -65,28 +70,23 @@ func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLeg
 			}
 			
 			if allocationResult.Error != nil {
-				out <- bookSeatsResult{
-					RequestedSeatsAvailable: false,
-					Error: allocationResult.Error,
-				}
+				result.Error = allocationResult.Error
+				out <- result
 				return
 			}
 
 			if !allocationResult.Available {
-				out <- bookSeatsResult{
-					RequestedSeatsAvailable: false,
-					Error: nil,
-				}
+				out <- result
 				return
 			}
 		}
 
-		out <- bookSeatsResult{
-			RequestedSeatsAvailable: true,
-			Error: nil,
-		}
-
+		result.RequestedSeatsAvailable = true
+		out <- result
 	}()
 
 	return out
 }
+
+
+
