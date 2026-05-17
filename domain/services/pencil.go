@@ -1,5 +1,6 @@
 package services
 
+import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
 
@@ -18,8 +19,19 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 		return uuid.Nil, err
 	}
 
-	seatsObtained, err := service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
+	seatsUnavailable, err := service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
 
+	if seatsUnavailable {
+		return uuid.Nil, errors.New("Seat(s) no longer available")
+	}
+
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	booking.Finalize()
+
+	return booking.Id, nil
 }
 
 func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
@@ -44,10 +56,10 @@ func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLeg
 			}
 
 			if !seatObtained {
-				return false, nil
+				return true, nil
 			}
 		}
 
-		return true, nil
+		return false, nil
 }
 
