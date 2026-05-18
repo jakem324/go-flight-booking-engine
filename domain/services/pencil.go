@@ -30,7 +30,10 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 		return uuid.Nil, err
 	}
 
-	booking.FinalizeChanges()
+	err = booking.FinalizeChanges()
+	if err != nil {
+		return uuid.Nil, err
+	}
 
 	return booking.Id, nil
 }
@@ -56,7 +59,10 @@ func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
 		return err
 	}
 
-	booking.FinalizeChanges()
+	err = booking.FinalizeChanges()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
