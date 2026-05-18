@@ -10,8 +10,14 @@ type BookingRepository interface {
 	UpsertBooking(Booking) error
 }
 
+type JourneyLeg struct {
+	FlightId uuid.UUID
+	SeatLockIds []int
+}
+
 type Journey struct {
 	Parent *Booking
+	Legs []JourneyLeg
 	isInboundJourney bool
 }
 
@@ -26,7 +32,10 @@ type Booking struct {
 
 func (journey Journey) ReleaseAllSeats() {
 	journey.Parent.bookingRepository.DeallocateSeats(journey.Parent.Id, journey.isInboundJourney)
-	// TODO: Release all locks
+	for _, leg := range journey.Legs {
+		flight := NewFlight(leg.FlightId)
+		flight.ReleaseSeats(leg.SeatLockIds)
+	}
 }
 
 func (booking Booking) FinalizeChanges () error {
@@ -48,6 +57,8 @@ func (journey Journey) AllocateSeats(flight Flight, seatLockIds []int) error {
 	if err != nil {
 		return err
 	}
+
+	journey.Legs = append(journey.Legs, JourneyLeg{ FlightId: flight.Id, SeatLockIds: seatLockIds })
 
 	return nil
 }

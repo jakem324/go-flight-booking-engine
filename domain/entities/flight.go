@@ -1,6 +1,10 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"weak"
+
+	"github.com/google/uuid"
+)
 
 type SeatLockResult struct {
 	LockIds []int
@@ -10,6 +14,7 @@ type SeatLockResult struct {
 
 type FlightRepository interface {
 	LockSeats(flightId uuid.UUID, numberOfSeats int) ([]int, error)
+	ReleaseSeats(flightId uuid.UUID, seatLockIds []int) 
 }
 
 type Flight struct {
@@ -39,3 +44,8 @@ func (flight Flight) TryBookSeats(journey *Journey, requiredSeats int) (bool, er
 
 	return true, nil
 }
+
+func (flight Flight) ReleaseSeats(seatLockIds []int) {
+	flight.flightRespository.ReleaseSeats(flight.Id, seatLockIds)
+}
+
