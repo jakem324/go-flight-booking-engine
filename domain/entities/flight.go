@@ -22,6 +22,6 @@ func NewFlight(id uuid.UUID) Flight {
 	return Flight{ Id: id }
 }
 
-func (flight Flight) TryAllocateSeat(*Journey) (bool, error) {
+func (flight Flight) TryAllocateSeats(journey *Journey, requiredSeats int) (bool, error) {
 	return false, nil
 }

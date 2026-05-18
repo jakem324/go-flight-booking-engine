@@ -4,6 +4,7 @@ import "github.com/google/uuid"
 
 type BookingRepository interface {
 	CreateBooking() (Booking, error)
+	GetBooking(id uuid.UUID) (Booking, error)
 }
 
 type Journey struct {
@@ -12,6 +13,7 @@ type Journey struct {
 
 type Booking struct {
 	Id uuid.UUID
+	NumberOfPassengers int
 	Outbound Journey
 	Return Journey
 }
@@ -20,6 +22,6 @@ func (journey Journey) ReleaseAllSeats() {
 
 }
 
-func (booking Booking) Finalize () {
+func (booking Booking) FinalizeChanges () {
 
 }

@@ -19,6 +19,7 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 		return uuid.Nil, err
 	}
 
+	booking.NumberOfPassengers = dto.RequiredNumberOfSeats
 	seatsUnavailable, err := service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
 
 	if seatsUnavailable {
@@ -29,16 +30,42 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 		return uuid.Nil, err
 	}
 
-	booking.Finalize()
+	booking.FinalizeChanges()
 
 	return booking.Id, nil
+}
+
+type SetInboundJourneyDto struct {
+	BookingId uuid.UUID
+	InboundJourneyLegs []uuid.UUID
+}
+
+func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
+	booking, err := service.bookingRepository.GetBooking(dto.BookingId)	
+	if err != nil {
+		return err
+	}
+
+	seatsUnavailable, err := service.tryBookSeats(&booking.Outbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
+
+	if seatsUnavailable {
+		return errors.New("Seat(s) no longer available")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	booking.FinalizeChanges()
+
+	return nil
 }
 
 func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
-			seatObtained, err := flight.TryAllocateSeat(journey)
-			if !seatObtained || err != nil {
+			seatsObtained, err := flight.TryAllocateSeats(journey, requiredSeats)
+			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 
 				// effort to avoid leaving orphan seat locks, but a background service will need 
@@ -55,7 +82,7 @@ func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLeg
 				return false, err
 			}
 
-			if !seatObtained {
+			if !seatsObtained {
 				return true, nil
 			}
 		}
