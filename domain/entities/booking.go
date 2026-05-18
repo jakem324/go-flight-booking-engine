@@ -12,6 +12,8 @@ type Journey struct {
 }
 
 type Booking struct {
+	bookingRepository BookingRepository
+
 	Id uuid.UUID
 	NumberOfPassengers int
 	Outbound Journey
@@ -23,5 +25,9 @@ func (journey Journey) ReleaseAllSeats() {
 }
 
 func (booking Booking) FinalizeChanges () {
+
+}
+
+func (journey Journey) AllocateSeats(flight Flight, seats []int) error {
 
 }

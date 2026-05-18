@@ -23,5 +23,19 @@ func NewFlight(id uuid.UUID) Flight {
 }
 
 func (flight Flight) TryAllocateSeats(journey *Journey, requiredSeats int) (bool, error) {
-	return false, nil
+	obtainedSeats, err := flight.flightRespository.CreateSeatLock(flight.Id, requiredSeats)
+	if err != nil {
+		return false, err
+	}
+	
+	if obtainedSeats == nil {
+		return false, nil
+	}
+
+	err = journey.AllocateSeats(flight, obtainedSeats)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
