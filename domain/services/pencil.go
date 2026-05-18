@@ -70,7 +70,7 @@ func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
 func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
-			seatsObtained, err := flight.TryAllocateSeats(journey, requiredSeats)
+			seatsObtained, err := flight.TryBookSeats(journey, requiredSeats)
 			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 

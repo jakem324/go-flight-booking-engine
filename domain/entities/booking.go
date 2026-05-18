@@ -26,6 +26,7 @@ type Booking struct {
 
 func (journey Journey) ReleaseAllSeats() {
 	journey.Parent.bookingRepository.DeallocateSeats(journey.Parent.Id, journey.isInboundJourney)
+	// TODO: Release all locks
 }
 
 func (booking Booking) FinalizeChanges () error {

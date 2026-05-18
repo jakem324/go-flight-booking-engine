@@ -9,7 +9,7 @@ type SeatLockResult struct {
 }
 
 type FlightRepository interface {
-	CreateSeatLock(flightId uuid.UUID, numberOfSeats int) ([]int, error)
+	LockSeats(flightId uuid.UUID, numberOfSeats int) ([]int, error)
 }
 
 type Flight struct {
@@ -22,17 +22,17 @@ func NewFlight(id uuid.UUID) Flight {
 	return Flight{ Id: id }
 }
 
-func (flight Flight) TryAllocateSeats(journey *Journey, requiredSeats int) (bool, error) {
-	obtainedSeats, err := flight.flightRespository.CreateSeatLock(flight.Id, requiredSeats)
+func (flight Flight) TryBookSeats(journey *Journey, requiredSeats int) (bool, error) {
+	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.Id, requiredSeats)
 	if err != nil {
 		return false, err
 	}
 	
-	if obtainedSeats == nil {
+	if obtainedSeatLocks == nil {
 		return false, nil
 	}
 
-	err = journey.AllocateSeats(flight, obtainedSeats)
+	err = journey.AllocateSeats(flight, obtainedSeatLocks)
 	if err != nil {
 		return false, err
 	}
