@@ -75,6 +75,23 @@ func (journey *Journey) ReleaseAllSeats() {
 	journey.modified = true
 }
 
+func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
+	err := journey.Parent.bookingRepository.OnSeatsAllocated(
+		journey.Parent.ID,
+		journey.isInboundJourney,
+		flight.ID,
+		seatLockIDs)
+	
+	if err != nil {
+		return err
+	}
+
+	journey.legs = append(journey.legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
+	journey.modified = true
+
+	return nil
+}
+
 func (booking *Booking) FinalizeChanges () error {
 	stagedChanges := BookingChanges {
 		ID: booking.ID,
@@ -96,21 +113,3 @@ func (booking *Booking) FinalizeChanges () error {
 
 	return nil
 }
-
-func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
-	err := journey.Parent.bookingRepository.OnSeatsAllocated(
-		journey.Parent.ID,
-		journey.isInboundJourney,
-		flight.ID,
-		seatLockIDs)
-	
-	if err != nil {
-		return err
-	}
-
-	journey.legs = append(journey.legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
-	journey.modified = true
-
-	return nil
-}
-
