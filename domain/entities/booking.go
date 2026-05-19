@@ -2,6 +2,12 @@ package entities
 
 import "github.com/google/uuid"
 
+type BookingChanges struct {
+	ID uuid.UUID
+	InboundLegs []JourneyLeg
+	OutboundLegs []JourneyLeg
+}
+
 type BookingRepository interface {
 	InitializeBookingID() (uuid.UUID, error)
 	ValidateBookingID(ID uuid.UUID) (bool, error)
@@ -11,7 +17,7 @@ type BookingRepository interface {
 	// these state changes are being made. This keeps the entity agnostic of the architectural requirements.
 	OnSeatsAllocated(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
 	OnSeatsDeallocated(bookingID uuid.UUID, isInboundJourney bool)
-	OnChangesCompleted(*Booking) error
+	OnChangesCompleted(BookingChanges) error
 }
 
 type JourneyLeg struct {
@@ -21,8 +27,9 @@ type JourneyLeg struct {
 
 type Journey struct {
 	Parent *Booking
-	Legs []JourneyLeg
+	legs []JourneyLeg
 	isInboundJourney bool
+	modified bool
 }
 
 type Booking struct {
@@ -60,15 +67,29 @@ func ExistingBooking(ID uuid.UUID) (*Booking, error) {
 
 func (journey *Journey) ReleaseAllSeats() {
 	journey.Parent.bookingRepository.OnSeatsDeallocated(journey.Parent.ID, journey.isInboundJourney)
-	for _, leg := range journey.Legs {
+	for _, leg := range journey.legs {
 		flight := NewFlight(leg.FlightID)
 		flight.ReleaseSeats(leg.SeatLockIDs)
 	}
-	journey.Legs = nil
+	journey.legs = nil
+	journey.modified = true
 }
 
 func (booking *Booking) FinalizeChanges () error {
-	err := booking.bookingRepository.OnChangesCompleted(booking)
+	stagedChanges := BookingChanges {
+		ID: booking.ID,
+	}
+
+	if booking.Inbound.modified {
+		stagedChanges.InboundLegs = booking.Inbound.legs
+	}
+
+	if booking.Outbound.modified {
+		stagedChanges.OutboundLegs = booking.Outbound.legs
+	}
+
+	err := booking.bookingRepository.OnChangesCompleted(stagedChanges);
+
 	if err != nil {
 		return err
 	}
@@ -87,7 +108,8 @@ func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
 		return err
 	}
 
-	journey.Legs = append(journey.Legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
+	journey.legs = append(journey.legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
+	journey.modified = true
 
 	return nil
 }
