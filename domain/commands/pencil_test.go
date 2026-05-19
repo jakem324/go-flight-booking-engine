@@ -2,7 +2,6 @@ package commands
 
 import (
 	"testing"
-	"booking.engine/domain/commands"
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -71,7 +70,7 @@ func CreateFixture () Fixture {
 	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
 	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
 
-	handler := commands.NewPencilBookingHandler(bookingFactory, flightFactory)
+	handler := NewPencilBookingHandler(bookingFactory, flightFactory)
 
 	return Fixture{
 		bookingRepositoryMock: bookingRepositoryMock,
@@ -86,7 +85,7 @@ func CreateFixture () Fixture {
 
 func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 	fixture := CreateFixture()
-	dto := commands.CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
+	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
 	_, err := fixture.handler.CreatePencilBooking(dto)
 
 	if assert.NotNil(t, err) {
