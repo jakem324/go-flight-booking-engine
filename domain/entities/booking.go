@@ -5,9 +5,13 @@ import "github.com/google/uuid"
 type BookingRepository interface {
 	InitializeBookingID() (uuid.UUID, error)
 	ValidateBookingID(ID uuid.UUID) (bool, error)
-	AllocateSeats(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
-	DeallocateSeats(bookingID uuid.UUID, isInboundJourney bool)
-	UpsertBooking(*Booking) error
+	// "Event" language intentional: the implemented repository can choose to either write incrementally
+	// using these events, or wait until OnChangesCompleted to write the whole aggregate once at the end.
+	// The entity does not care which option is leveraged; it is simply letting the repository know when
+	// these state changes are being made. This keeps the entity agnostic of the architectural requirements.
+	OnSeatsAllocated(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
+	OnSeatsDeallocated(bookingID uuid.UUID, isInboundJourney bool)
+	OnChangesCompleted(*Booking) error
 }
 
 type JourneyLeg struct {
@@ -55,7 +59,7 @@ func ExistingBooking(ID uuid.UUID) (*Booking, error) {
 }
 
 func (journey *Journey) ReleaseAllSeats() {
-	journey.Parent.bookingRepository.DeallocateSeats(journey.Parent.ID, journey.isInboundJourney)
+	journey.Parent.bookingRepository.OnSeatsDeallocated(journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.Legs {
 		flight := NewFlight(leg.FlightID)
 		flight.ReleaseSeats(leg.SeatLockIDs)
@@ -64,7 +68,7 @@ func (journey *Journey) ReleaseAllSeats() {
 }
 
 func (booking *Booking) FinalizeChanges () error {
-	err := booking.bookingRepository.UpsertBooking(booking)
+	err := booking.bookingRepository.OnChangesCompleted(booking)
 	if err != nil {
 		return err
 	}
@@ -73,7 +77,7 @@ func (booking *Booking) FinalizeChanges () error {
 }
 
 func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
-	err := journey.Parent.bookingRepository.AllocateSeats(
+	err := journey.Parent.bookingRepository.OnSeatsAllocated(
 		journey.Parent.ID,
 		journey.isInboundJourney,
 		flight.ID,
