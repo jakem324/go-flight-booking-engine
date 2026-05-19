@@ -72,7 +72,6 @@ func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T
 	bookingRepositoryMock.AssertNotCalled(t, "OnChangesCompleted")
 }
 
-/*
 func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 	bookingRepositoryMock := new(BookingRepositoryMock)
 	flightRepositoryMock := new(FlightRepositoryMock)
@@ -87,16 +86,16 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 		"LockSeats",
 		mock.AnythingOfType("uuid.UUID"),
 		mock.AnythingOfType("int")).Return([]int {1,2,3}, nil)
-	//mock.On("OnSeatsAllocated", bookingID, false).Return(entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false).Return(nil)
+	bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
 	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
 	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
 
 	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 5 }
-	_, err := CreatePencilBooking(factory, dto)
+	_, err := CreatePencilBooking(bookingFactory, flightFactory, dto)
 
 	if assert.Nil(t, err) {
-		mock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
+		bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
 	}
 }
-*/
