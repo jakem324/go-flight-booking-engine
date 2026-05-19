@@ -15,7 +15,7 @@ type CreatePencilBookingDto struct {
 }
 
 func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
-	booking, err := service.bookingRepository.CreateBooking()	
+	booking, err := entities.NewBooking()
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -45,12 +45,12 @@ type SetInboundJourneyDto struct {
 }
 
 func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
-	booking, err := service.bookingRepository.GetBooking(dto.BookingID)	
+	booking, err := entities.ExistingBooking(dto.BookingID)
 	if err != nil {
 		return err
 	}
 
-	seatsUnavailable, err := service.tryBookSeats(&booking.Outbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
+	seatsUnavailable, err := service.tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
 
 	if seatsUnavailable {
 		return errors.New("Seat(s) no longer available")

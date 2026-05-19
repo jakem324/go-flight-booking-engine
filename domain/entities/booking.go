@@ -3,8 +3,8 @@ package entities
 import "github.com/google/uuid"
 
 type BookingRepository interface {
-	CreateBooking() (Booking, error)
-	GetBooking(id uuid.UUID) (Booking, error)
+	InitializeBookingID() (uuid.UUID, error)
+	ValidateBookingID(ID uuid.UUID) (bool, error)
 	AllocateSeats(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
 	DeallocateSeats(bookingID uuid.UUID, isInboundJourney bool)
 	UpsertBooking(*Booking) error
@@ -27,7 +27,31 @@ type Booking struct {
 	ID uuid.UUID
 	NumberOfPassengers int
 	Outbound Journey
-	Return Journey
+	Inbound Journey
+}
+
+func NewBooking() (*Booking, error) {
+	booking := Booking{}
+	id, err := booking.bookingRepository.InitializeBookingID()
+	if err != nil {
+		return nil, err
+	}
+
+	booking.ID = id
+	booking.Inbound.isInboundJourney = true
+	return &booking, nil
+}
+
+func ExistingBooking(ID uuid.UUID) (*Booking, error) {
+	booking := Booking{}
+	valid, err := booking.bookingRepository.ValidateBookingID(ID)
+	if !valid || err != nil {
+		return nil, err
+	}
+
+	booking.ID = ID
+	booking.Inbound.isInboundJourney = true
+	return &booking, nil
 }
 
 func (journey *Journey) ReleaseAllSeats() {
@@ -36,6 +60,7 @@ func (journey *Journey) ReleaseAllSeats() {
 		flight := NewFlight(leg.FlightID)
 		flight.ReleaseSeats(leg.SeatLockIDs)
 	}
+	journey.Legs = nil
 }
 
 func (booking *Booking) FinalizeChanges () error {
