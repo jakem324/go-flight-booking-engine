@@ -1,20 +1,16 @@
-// Package services defines the domain service layer
-package services
+// Package commands houses the handlers for all commands within the domain
+package commands
 
 import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
-
-type PencilService struct {
-	bookingRepository entities.BookingRepository
-}
 
 type CreatePencilBookingDto struct {
 	RequiredNumberOfSeats int
 	OutboundJourneyLegs []uuid.UUID
 }
 
-func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
+func CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
 	// TODO - inject factory
 	factory := entities.BookingFactory{}
 	booking, err := factory.NewBooking()
@@ -23,7 +19,7 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 	}
 
 	booking.NumberOfPassengers = dto.RequiredNumberOfSeats
-	seatsUnavailable, err := service.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
+	seatsUnavailable, err := tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
 
 	if seatsUnavailable {
 		return uuid.Nil, errors.New("Seat(s) no longer available")
@@ -46,7 +42,7 @@ type SetInboundJourneyDto struct {
 	InboundJourneyLegs []uuid.UUID
 }
 
-func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
+func SetInboundJourney(dto SetInboundJourneyDto) error {
 	// TODO - inject factory
 	factory := entities.BookingFactory{}
 	booking, err := factory.ExistingBooking(dto.BookingID)
@@ -54,7 +50,7 @@ func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
 		return err
 	}
 
-	seatsUnavailable, err := service.tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
+	seatsUnavailable, err := tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
 
 	if seatsUnavailable {
 		return errors.New("Seat(s) no longer available")
@@ -72,7 +68,7 @@ func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
 	return nil
 }
 
-func (service PencilService) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
+func tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
 			seatsObtained, err := flight.TryBookSeats(journey, requiredSeats)
