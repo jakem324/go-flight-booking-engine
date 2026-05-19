@@ -1,12 +1,21 @@
 package entities
 
+import "errors"
 import "github.com/google/uuid"
 
 type BookingFactory struct {
 	bookingRepository BookingRepository
 }
 
-func (factory BookingFactory) NewBooking() (*Booking, error) {
+func NewBookingFactory(bookingRepository BookingRepository) BookingFactory {
+	factory := BookingFactory{ bookingRepository: bookingRepository }
+	return factory
+}
+
+func (factory BookingFactory) NewBooking(numberOfPassengers int) (*Booking, error) {
+	if numberOfPassengers < 1 {
+		return nil, errors.New("invalid number of passengers")
+	}
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
 	id, err := booking.bookingRepository.InitializeBookingID()

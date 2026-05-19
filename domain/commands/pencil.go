@@ -10,10 +10,8 @@ type CreatePencilBookingDto struct {
 	OutboundJourneyLegs []uuid.UUID
 }
 
-func CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
-	// TODO - inject factory
-	factory := entities.BookingFactory{}
-	booking, err := factory.NewBooking()
+func CreatePencilBooking(factory entities.BookingFactory, dto CreatePencilBookingDto) (uuid.UUID, error) {
+	booking, err := factory.NewBooking(dto.RequiredNumberOfSeats)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -42,9 +40,7 @@ type SetInboundJourneyDto struct {
 	InboundJourneyLegs []uuid.UUID
 }
 
-func SetInboundJourney(dto SetInboundJourneyDto) error {
-	// TODO - inject factory
-	factory := entities.BookingFactory{}
+func SetInboundJourney(factory entities.BookingFactory, dto SetInboundJourneyDto) error {
 	booking, err := factory.ExistingBooking(dto.BookingID)
 	if err != nil {
 		return err
