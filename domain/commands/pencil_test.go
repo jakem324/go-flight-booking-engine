@@ -23,7 +23,12 @@ func (m *BookingRepositoryMock) ValidateBooking(ID uuid.UUID) (entities.Validate
 	return args.Get(0).(entities.ValidateBookingResult), args.Error(1)
 }
 
-func (m *BookingRepositoryMock) OnSeatsAllocated(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error {
+func (m *BookingRepositoryMock) OnSeatsAllocated(
+	bookingID uuid.UUID,
+	isInboundJourney bool,
+	flightID uuid.UUID,
+	seatLockIDs []int) error {
+
 	args := m.Called(bookingID, isInboundJourney, flightID, seatLockIDs)
 	return args.Error(0)
 }
@@ -81,7 +86,8 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 		NumberOfPassengers: 5,
 	}
 	bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
-	bookingRepositoryMock.On("ValidateBooking", bookingID).Return(entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
+		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
 	flightRepositoryMock.On(
 		"LockSeats",
 		mock.AnythingOfType("uuid.UUID"),
