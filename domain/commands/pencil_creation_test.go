@@ -29,23 +29,25 @@ func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 		assert.Equal(t, "invalid number of passengers", err.Error())
 	}
 
-	mock.AssertNotCalled(t, "InitializeBookingID")
+	mock.AssertNotCalled(t, "InitializeBooking")
 	mock.AssertNotCalled(t, "OnChangesCompleted")
 }
 
-/*
-func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
+func BookingIsInitialized(t* testing.T) {
 	mock := new(BookingRepositoryMock)
-	factory := entities.NewBookingFactory(mock)
 
-	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
+	bookingID := uuid.New()
+	expectedInitializationDto := entities.InitializeBookingDto{
+		NumberOfPassengers: 5,
+	}
+	mock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
+
+	factory := entities.NewBookingFactory(mock)
+	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 5 }
 	_, err := CreatePencilBooking(factory, dto)
 
-	if assert.NotNil(t, err) {
-		assert.Equal(t, "invalid number of passengers", err.Error())
+	if assert.Nil(t, err) {
+		mock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
 	}
-
-	mock.AssertNotCalled(t, "InitializeBookingID")
-	mock.AssertNotCalled(t, "OnChangesCompleted")
 }
-*/
+
