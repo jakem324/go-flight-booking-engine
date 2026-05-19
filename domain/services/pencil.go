@@ -15,7 +15,9 @@ type CreatePencilBookingDto struct {
 }
 
 func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
-	booking, err := entities.NewBooking()
+	// TODO - inject factory
+	factory := entities.BookingFactory{}
+	booking, err := factory.NewBooking()
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -45,7 +47,9 @@ type SetInboundJourneyDto struct {
 }
 
 func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
-	booking, err := entities.ExistingBooking(dto.BookingID)
+	// TODO - inject factory
+	factory := entities.BookingFactory{}
+	booking, err := factory.ExistingBooking(dto.BookingID)
 	if err != nil {
 		return err
 	}

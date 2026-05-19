@@ -2,6 +2,36 @@ package entities
 
 import "github.com/google/uuid"
 
+type BookingFactory struct {
+	bookingRepository BookingRepository
+}
+
+func (factory BookingFactory) NewBooking() (*Booking, error) {
+	booking := Booking{}
+	booking.bookingRepository = factory.bookingRepository
+	id, err := booking.bookingRepository.InitializeBookingID()
+	if err != nil {
+		return nil, err
+	}
+
+	booking.ID = id
+	booking.Inbound.isInboundJourney = true
+	return &booking, nil
+}
+
+func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
+	booking := Booking{}
+	booking.bookingRepository = factory.bookingRepository
+	valid, err := booking.bookingRepository.ValidateBookingID(ID)
+	if !valid || err != nil {
+		return nil, err
+	}
+
+	booking.ID = ID
+	booking.Inbound.isInboundJourney = true
+	return &booking, nil
+}
+
 type BookingChanges struct {
 	ID uuid.UUID
 	InboundLegs []JourneyLeg
@@ -39,30 +69,6 @@ type Booking struct {
 	NumberOfPassengers int
 	Outbound Journey
 	Inbound Journey
-}
-
-func NewBooking() (*Booking, error) {
-	booking := Booking{}
-	id, err := booking.bookingRepository.InitializeBookingID()
-	if err != nil {
-		return nil, err
-	}
-
-	booking.ID = id
-	booking.Inbound.isInboundJourney = true
-	return &booking, nil
-}
-
-func ExistingBooking(ID uuid.UUID) (*Booking, error) {
-	booking := Booking{}
-	valid, err := booking.bookingRepository.ValidateBookingID(ID)
-	if !valid || err != nil {
-		return nil, err
-	}
-
-	booking.ID = ID
-	booking.Inbound.isInboundJourney = true
-	return &booking, nil
 }
 
 func (journey *Journey) ReleaseAllSeats() {
