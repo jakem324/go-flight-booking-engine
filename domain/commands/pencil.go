@@ -5,22 +5,32 @@ import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
 
+type PencilBookingHandler struct {
+	bookingFactory *entities.BookingFactory
+	flightFactory *entities.FlightFactory
+}
+
+func NewPencilBookingHandler (
+	bookingFactory entities.BookingFactory,
+	flightFactory entities.FlightFactory) PencilBookingHandler {
+	return PencilBookingHandler{
+		bookingFactory: &bookingFactory,
+		flightFactory: &flightFactory,
+	}
+}
+
 type CreatePencilBookingDto struct {
 	RequiredNumberOfSeats int
 	OutboundJourneyLegs []uuid.UUID
 }
 
-func CreatePencilBooking(
-	bookingFactory entities.BookingFactory,
-	flightFactory entities.FlightFactory,
-	dto CreatePencilBookingDto) (uuid.UUID, error) {
-
-	booking, err := bookingFactory.NewBooking(dto.RequiredNumberOfSeats)
+func (handler *PencilBookingHandler) CreatePencilBooking(dto CreatePencilBookingDto) (uuid.UUID, error) {
+	booking, err := handler.bookingFactory.NewBooking(dto.RequiredNumberOfSeats)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	seatsUnavailable, err := tryBookSeats(flightFactory, &booking.Outbound, dto.OutboundJourneyLegs)
+	seatsUnavailable, err := handler.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs)
 
 	if seatsUnavailable {
 		return uuid.Nil, errors.New("Seat(s) no longer available")
@@ -43,17 +53,13 @@ type SetInboundJourneyDto struct {
 	InboundJourneyLegs []uuid.UUID
 }
 
-func SetInboundJourney(
-	bookingFactory entities.BookingFactory,
-	flightFactory entities.FlightFactory,
-	dto SetInboundJourneyDto) error {
-
-	booking, err := bookingFactory.ExistingBooking(dto.BookingID)
+func (handler *PencilBookingHandler) SetInboundJourney(dto SetInboundJourneyDto) error {
+	booking, err := handler.bookingFactory.ExistingBooking(dto.BookingID)
 	if err != nil {
 		return err
 	}
 
-	seatsUnavailable, err := tryBookSeats(flightFactory, &booking.Inbound, dto.InboundJourneyLegs)
+	seatsUnavailable, err := handler.tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs)
 
 	if seatsUnavailable {
 		return errors.New("Seat(s) no longer available")
@@ -71,9 +77,9 @@ func SetInboundJourney(
 	return nil
 }
 
-func tryBookSeats(flightFactory entities.FlightFactory, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
+func (handler *PencilBookingHandler) tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
-			flight := flightFactory.NewFlight(proposedLeg)
+			flight := handler.flightFactory.NewFlight(proposedLeg)
 			seatsObtained, err := flight.TryBookSeats(journey)
 			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 

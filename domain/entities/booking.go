@@ -5,11 +5,11 @@ import "github.com/google/uuid"
 
 type BookingFactory struct {
 	bookingRepository BookingRepository
-	flightFactory FlightFactory
+	flightFactory *FlightFactory
 }
 
 func NewBookingFactory(bookingRepository BookingRepository, flightFactory FlightFactory) BookingFactory {
-	factory := BookingFactory{ bookingRepository: bookingRepository, flightFactory: flightFactory }
+	factory := BookingFactory{ bookingRepository: bookingRepository, flightFactory: &flightFactory }
 	return factory
 }
 
@@ -91,7 +91,7 @@ type Journey struct {
 
 type Booking struct {
 	bookingRepository BookingRepository
-	flightFactory FlightFactory
+	flightFactory *FlightFactory
 
 	ID uuid.UUID
 	numberOfPassengers int

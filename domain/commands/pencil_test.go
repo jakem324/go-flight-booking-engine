@@ -2,10 +2,11 @@ package commands
 
 import (
 	"testing"
+	"booking.engine/domain/commands"
+	"booking.engine/domain/entities"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/google/uuid"
-	"booking.engine/domain/entities"
 )
 
 type BookingRepositoryMock struct {
@@ -56,52 +57,68 @@ func (m *FlightRepositoryMock) ReleaseSeats(flightID uuid.UUID, seatLockIDs []in
 	m.Called(flightID, seatLockIDs)
 }
 
+type Fixture struct {
+	bookingRepositoryMock *BookingRepositoryMock
+	flightRepositoryMock *FlightRepositoryMock
+	
+	handler PencilBookingHandler
+}
+
+func CreateFixture () Fixture {
+	bookingRepositoryMock := new(BookingRepositoryMock)
+	flightRepositoryMock := new(FlightRepositoryMock)
+
+	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
+	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
+
+	handler := commands.NewPencilBookingHandler(bookingFactory, flightFactory)
+
+	return Fixture{
+		bookingRepositoryMock: bookingRepositoryMock,
+		flightRepositoryMock: flightRepositoryMock,
+		handler: handler,
+	}
+}
+
 
 
 
 
 func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
-	bookingRepositoryMock := new(BookingRepositoryMock)
-	flightRepositoryMock := new(FlightRepositoryMock)
-	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
-	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
-
-	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
-	_, err := CreatePencilBooking(bookingFactory, flightFactory, dto)
+	fixture := CreateFixture()
+	dto := commands.CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
+	_, err := fixture.handler.CreatePencilBooking(dto)
 
 	if assert.NotNil(t, err) {
 		assert.Equal(t, "invalid number of passengers", err.Error())
 	}
 
-	bookingRepositoryMock.AssertNotCalled(t, "InitializeBooking")
-	bookingRepositoryMock.AssertNotCalled(t, "OnChangesCompleted")
+	fixture.bookingRepositoryMock.AssertNotCalled(t, "InitializeBooking")
+	fixture.bookingRepositoryMock.AssertNotCalled(t, "OnChangesCompleted")
 }
 
 func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
-	bookingRepositoryMock := new(BookingRepositoryMock)
-	flightRepositoryMock := new(FlightRepositoryMock)
+	fixture := CreateFixture()
 
 	bookingID := uuid.New()
 	expectedInitializationDto := entities.InitializeBookingDto{
 		NumberOfPassengers: 5,
 	}
-	bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
-	bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
+
+	fixture.bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
+	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
 		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
-	flightRepositoryMock.On(
+	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		mock.AnythingOfType("uuid.UUID"),
 		mock.AnythingOfType("int")).Return([]int {1,2,3}, nil)
-	bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false).Return(nil)
-	bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
-
-	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
-	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
+	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false).Return(nil)
+	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
 	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 5 }
-	_, err := CreatePencilBooking(bookingFactory, flightFactory, dto)
+	_, err := fixture.handler.CreatePencilBooking(dto)
 
 	if assert.Nil(t, err) {
-		bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
+		fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
 	}
 }
