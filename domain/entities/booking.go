@@ -5,14 +5,14 @@ import "github.com/google/uuid"
 type BookingRepository interface {
 	CreateBooking() (Booking, error)
 	GetBooking(id uuid.UUID) (Booking, error)
-	AllocateSeats(bookingId uuid.UUID, isInboundJourney bool, flightId uuid.UUID, seatLockIds []int) error
-	DeallocateSeats(bookingId uuid.UUID, isInboundJourney bool)
-	UpsertBooking(Booking) error
+	AllocateSeats(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
+	DeallocateSeats(bookingID uuid.UUID, isInboundJourney bool)
+	UpsertBooking(*Booking) error
 }
 
 type JourneyLeg struct {
-	FlightId uuid.UUID
-	SeatLockIds []int
+	FlightID uuid.UUID
+	SeatLockIDs []int
 }
 
 type Journey struct {
@@ -24,21 +24,21 @@ type Journey struct {
 type Booking struct {
 	bookingRepository BookingRepository
 
-	Id uuid.UUID
+	ID uuid.UUID
 	NumberOfPassengers int
 	Outbound Journey
 	Return Journey
 }
 
-func (journey Journey) ReleaseAllSeats() {
-	journey.Parent.bookingRepository.DeallocateSeats(journey.Parent.Id, journey.isInboundJourney)
+func (journey *Journey) ReleaseAllSeats() {
+	journey.Parent.bookingRepository.DeallocateSeats(journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.Legs {
-		flight := NewFlight(leg.FlightId)
-		flight.ReleaseSeats(leg.SeatLockIds)
+		flight := NewFlight(leg.FlightID)
+		flight.ReleaseSeats(leg.SeatLockIDs)
 	}
 }
 
-func (booking Booking) FinalizeChanges () error {
+func (booking *Booking) FinalizeChanges () error {
 	err := booking.bookingRepository.UpsertBooking(booking)
 	if err != nil {
 		return err
@@ -47,18 +47,18 @@ func (booking Booking) FinalizeChanges () error {
 	return nil
 }
 
-func (journey Journey) AllocateSeats(flight Flight, seatLockIds []int) error {
+func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
 	err := journey.Parent.bookingRepository.AllocateSeats(
-		journey.Parent.Id,
+		journey.Parent.ID,
 		journey.isInboundJourney,
-		flight.Id,
-		seatLockIds)
+		flight.ID,
+		seatLockIDs)
 	
 	if err != nil {
 		return err
 	}
 
-	journey.Legs = append(journey.Legs, JourneyLeg{ FlightId: flight.Id, SeatLockIds: seatLockIds })
+	journey.Legs = append(journey.Legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
 
 	return nil
 }

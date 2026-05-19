@@ -1,34 +1,31 @@
+// Package entities houses the domain objects
 package entities
 
-import (
-	"weak"
-
-	"github.com/google/uuid"
-)
+import "github.com/google/uuid"
 
 type SeatLockResult struct {
-	LockIds []int
+	LockIDs []int
 	RequestedSeatsAvailable bool
 	Error error
 }
 
 type FlightRepository interface {
-	LockSeats(flightId uuid.UUID, numberOfSeats int) ([]int, error)
-	ReleaseSeats(flightId uuid.UUID, seatLockIds []int) 
+	LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error)
+	ReleaseSeats(flightID uuid.UUID, seatLockIDs []int) 
 }
 
 type Flight struct {
 	flightRespository FlightRepository
 
-	Id uuid.UUID
+	ID uuid.UUID
 }
 
 func NewFlight(id uuid.UUID) Flight {
-	return Flight{ Id: id }
+	return Flight{ ID: id }
 }
 
 func (flight Flight) TryBookSeats(journey *Journey, requiredSeats int) (bool, error) {
-	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.Id, requiredSeats)
+	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.ID, requiredSeats)
 	if err != nil {
 		return false, err
 	}
@@ -45,7 +42,7 @@ func (flight Flight) TryBookSeats(journey *Journey, requiredSeats int) (bool, er
 	return true, nil
 }
 
-func (flight Flight) ReleaseSeats(seatLockIds []int) {
-	flight.flightRespository.ReleaseSeats(flight.Id, seatLockIds)
+func (flight Flight) ReleaseSeats(seatLockIDs []int) {
+	flight.flightRespository.ReleaseSeats(flight.ID, seatLockIDs)
 }
 

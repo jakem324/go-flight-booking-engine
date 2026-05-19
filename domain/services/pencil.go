@@ -1,3 +1,4 @@
+// Package services defines the domain service layer
 package services
 
 import "errors"
@@ -35,16 +36,16 @@ func (service PencilService) CreatePencilBooking(dto CreatePencilBookingDto) (uu
 		return uuid.Nil, err
 	}
 
-	return booking.Id, nil
+	return booking.ID, nil
 }
 
 type SetInboundJourneyDto struct {
-	BookingId uuid.UUID
+	BookingID uuid.UUID
 	InboundJourneyLegs []uuid.UUID
 }
 
 func (service PencilService) SetInboundJourney(dto SetInboundJourneyDto) error {
-	booking, err := service.bookingRepository.GetBooking(dto.BookingId)	
+	booking, err := service.bookingRepository.GetBooking(dto.BookingID)	
 	if err != nil {
 		return err
 	}
