@@ -121,3 +121,44 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 		fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
 	}
 }
+
+/*
+	Scenario: Create Pencil Booking when seats are available on specified flights 
+	All happy-path assertions:
+	 - Booking initialized via booking repo
+	 - Requested (available) seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Changes finalized via booking repo 
+	 - Created booking ID returned
+
+	Scenario: Create Pencil Booking when seats are available on one or more specified flights 
+	All assertions:
+	 - Booking initialized via booking repo
+	 - Requested seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
+	 - Deallocated seats relleased via flight repo
+	 - Changes NOT finalized via booking repo 
+	 - Error returned stating seat(s) no longer available
+
+	 Scenario: Set inbound journey with available seats
+	 Assertions:
+	 - Requested (available) seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Changes finalized via booking repo 
+	 - Nil error returned
+		
+	 Scenario: Set inbound journey with invalid booking ID
+	 Assertions:
+	 - Invalid booking ID error returned 
+
+	 Scenario: Set inbound journey when sets are unavailable on one or more flights
+	 Assertions:
+	 - Requested seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
+	 - Deallocated seats relleased via flight repo
+	 - Changes NOT finalized via booking repo 
+	 - Error returned stating seat(s) no longer available
+
+*/
