@@ -1,9 +1,8 @@
 package commands
 
 import (
-	"strings"
-	"errors"
 	"testing"
+	"github.com/stretchr/testify/assert"
 	"github.com/google/uuid"
 	"booking.engine/domain/entities"
 )
@@ -26,12 +25,11 @@ func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 	factory := entities.NewBookingFactory(mock)
 
 	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
-	expected := "invalid number of passengers"
-
 	_, err := CreatePencilBooking(factory, dto)
-	if err == nil || !strings.Contains(err.Error(), expected) {
-		t.Errorf("expected error containing %q, got %v", expected, err)	
-	}	
+
+	if assert.NotNil(t, err) {
+		assert.Equal(t, "invalid number of passengers", err.Error())
+	}
 }
 /*
 	mock := BookingRepositoryMock{
