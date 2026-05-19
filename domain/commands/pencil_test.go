@@ -37,12 +37,32 @@ func (m *BookingRepositoryMock) OnChangesCompleted(changes entities.BookingChang
 	return args.Error(0)
 }
 
+type FlightRepositoryMock struct {
+	mock.Mock
+	entities.FlightRepository
+}
+
+func (m *FlightRepositoryMock) LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error) {
+	args := m.Called(flightID, numberOfSeats)
+	return args.Get(0).([]int), args.Error(1)
+}
+
+func (m *FlightRepositoryMock) ReleaseSeats(flightID uuid.UUID, numberOfSeats int) {
+	m.Called(flightID, numberOfSeats)
+}
+
+
+
+
+
 func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
-	mock := new(BookingRepositoryMock)
-	factory := entities.NewBookingFactory(mock)
+	bookingRepositoryMock := new(BookingRepositoryMock)
+	flightRepositoryMock := new(FlightRepositoryMock)
+	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
+	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
 
 	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
-	_, err := CreatePencilBooking(factory, dto)
+	_, err := CreatePencilBooking(bookingFactory, flightFactory, dto)
 
 	if assert.NotNil(t, err) {
 		assert.Equal(t, "invalid number of passengers", err.Error())
@@ -53,17 +73,21 @@ func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T
 }
 
 func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
-	mock := new(BookingRepositoryMock)
+	bookingRepositoryMock := new(BookingRepositoryMock)
+	flightRepositoryMock := new(FlightRepositoryMock)
 
 	bookingID := uuid.New()
 	expectedInitializationDto := entities.InitializeBookingDto{
 		NumberOfPassengers: 5,
 	}
-	mock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
-	mock.On("ValidateBooking", bookingID).Return(entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
+	bookingRepositoryMock.On("ValidateBooking", bookingID).Return(entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	flightRepositoryMock.On("LockSeats", 
 	//mock.On("OnSeatsAllocated", bookingID, false).Return(entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
 
-	factory := entities.NewBookingFactory(mock)
+	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
+	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
+
 	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 5 }
 	_, err := CreatePencilBooking(factory, dto)
 

@@ -5,10 +5,11 @@ import "github.com/google/uuid"
 
 type BookingFactory struct {
 	bookingRepository BookingRepository
+	flightFactory FlightFactory
 }
 
-func NewBookingFactory(bookingRepository BookingRepository) BookingFactory {
-	factory := BookingFactory{ bookingRepository: bookingRepository }
+func NewBookingFactory(bookingRepository BookingRepository, flightFactory FlightFactory) BookingFactory {
+	factory := BookingFactory{ bookingRepository: bookingRepository, flightFactory: flightFactory }
 	return factory
 }
 
@@ -90,6 +91,7 @@ type Journey struct {
 
 type Booking struct {
 	bookingRepository BookingRepository
+	flightFactory FlightFactory
 
 	ID uuid.UUID
 	numberOfPassengers int
@@ -100,7 +102,7 @@ type Booking struct {
 func (journey *Journey) ReleaseAllSeats() {
 	journey.Parent.bookingRepository.OnSeatsDeallocated(journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.legs {
-		flight := NewFlight(leg.FlightID)
+		flight := journey.Parent.flightFactory.NewFlight(leg.FlightID)
 		flight.ReleaseSeats(leg.SeatLockIDs)
 	}
 	journey.legs = nil

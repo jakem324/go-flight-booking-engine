@@ -10,13 +10,13 @@ type CreatePencilBookingDto struct {
 	OutboundJourneyLegs []uuid.UUID
 }
 
-func CreatePencilBooking(factory entities.BookingFactory, dto CreatePencilBookingDto) (uuid.UUID, error) {
-	booking, err := factory.NewBooking(dto.RequiredNumberOfSeats)
+func CreatePencilBooking(bookingFactory entities.BookingFactory, flightFactory entities.FlightFactory, dto CreatePencilBookingDto) (uuid.UUID, error) {
+	booking, err := bookingFactory.NewBooking(dto.RequiredNumberOfSeats)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	seatsUnavailable, err := tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs)
+	seatsUnavailable, err := tryBookSeats(flightFactory, &booking.Outbound, dto.OutboundJourneyLegs)
 
 	if seatsUnavailable {
 		return uuid.Nil, errors.New("Seat(s) no longer available")
@@ -39,13 +39,13 @@ type SetInboundJourneyDto struct {
 	InboundJourneyLegs []uuid.UUID
 }
 
-func SetInboundJourney(factory entities.BookingFactory, dto SetInboundJourneyDto) error {
-	booking, err := factory.ExistingBooking(dto.BookingID)
+func SetInboundJourney(bookingFactory entities.BookingFactory, flightFactory entities.FlightFactory, dto SetInboundJourneyDto) error {
+	booking, err := bookingFactory.ExistingBooking(dto.BookingID)
 	if err != nil {
 		return err
 	}
 
-	seatsUnavailable, err := tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs)
+	seatsUnavailable, err := tryBookSeats(flightFactory, &booking.Inbound, dto.InboundJourneyLegs)
 
 	if seatsUnavailable {
 		return errors.New("Seat(s) no longer available")
@@ -63,9 +63,9 @@ func SetInboundJourney(factory entities.BookingFactory, dto SetInboundJourneyDto
 	return nil
 }
 
-func tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
+func tryBookSeats(flightFactory entities.FlightFactory, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
-			flight := entities.NewFlight(proposedLeg)
+			flight := flightFactory.NewFlight(proposedLeg)
 			seatsObtained, err := flight.TryBookSeats(journey)
 			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 

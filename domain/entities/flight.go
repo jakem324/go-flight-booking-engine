@@ -3,10 +3,13 @@ package entities
 
 import "github.com/google/uuid"
 
-type SeatLockResult struct {
-	LockIDs []int
-	RequestedSeatsAvailable bool
-	Error error
+type FlightFactory struct {
+	flightRepository FlightRepository
+}
+
+func NewFlightFactory(flightRepository FlightRepository) FlightFactory {
+	factory := FlightFactory{ flightRepository: flightRepository }
+	return factory
 }
 
 type FlightRepository interface {
@@ -20,8 +23,8 @@ type Flight struct {
 	ID uuid.UUID
 }
 
-func NewFlight(id uuid.UUID) Flight {
-	return Flight{ ID: id }
+func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
+	return Flight{ ID: id, flightRespository: factory.flightRepository }
 }
 
 func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
