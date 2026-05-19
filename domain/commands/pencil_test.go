@@ -18,7 +18,7 @@ func (m *BookingRepositoryMock) InitializeBookingID() (uuid.UUID, error) {
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
-func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
+func TestCreatePencilBooking_CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 	mock := new(BookingRepositoryMock)
 	factory := entities.NewBookingFactory(mock)
 
@@ -33,7 +33,7 @@ func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 	mock.AssertNotCalled(t, "OnChangesCompleted")
 }
 
-func BookingIsInitialized(t* testing.T) {
+func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 	mock := new(BookingRepositoryMock)
 
 	bookingID := uuid.New()
