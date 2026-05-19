@@ -24,8 +24,8 @@ func NewFlight(id uuid.UUID) Flight {
 	return Flight{ ID: id }
 }
 
-func (flight Flight) TryBookSeats(journey *Journey, requiredSeats int) (bool, error) {
-	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.ID, requiredSeats)
+func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
+	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.ID, journey.Parent.numberOfPassengers)
 	if err != nil {
 		return false, err
 	}

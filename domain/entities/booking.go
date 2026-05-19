@@ -18,12 +18,16 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (*Booking, erro
 	}
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
-	id, err := booking.bookingRepository.InitializeBookingID()
+	id, err := booking.bookingRepository.InitializeBooking(InitializeBookingDto{
+		NumberOfPassengers: numberOfPassengers,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	booking.ID = id
+	booking.numberOfPassengers = numberOfPassengers
 	booking.Inbound.isInboundJourney = true
 	return &booking, nil
 }
@@ -31,25 +35,38 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (*Booking, erro
 func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
-	valid, err := booking.bookingRepository.ValidateBookingID(ID)
-	if !valid || err != nil {
+	result, err := booking.bookingRepository.ValidateBooking(ID)
+	if !result.BookingExists || err != nil {
 		return nil, err
 	}
 
-	booking.ID = ID
+	booking.Outbound = Journey{}
+	booking.Inbound = Journey{}
 	booking.Inbound.isInboundJourney = true
+	booking.ID = ID
+	booking.numberOfPassengers = result.NumberOfPassengers
 	return &booking, nil
 }
 
 type BookingChanges struct {
 	ID uuid.UUID
+	NumberOfPassengers int
 	InboundLegs []JourneyLeg
 	OutboundLegs []JourneyLeg
 }
 
+type InitializeBookingDto struct {
+	NumberOfPassengers int
+}
+
+type ValidateBookingResult struct {
+	BookingExists bool
+	NumberOfPassengers int
+}
+
 type BookingRepository interface {
-	InitializeBookingID() (uuid.UUID, error)
-	ValidateBookingID(ID uuid.UUID) (bool, error)
+	InitializeBooking(dto InitializeBookingDto) (uuid.UUID, error)
+	ValidateBooking(ID uuid.UUID) (ValidateBookingResult, error)
 	// "Event" language intentional: the implemented repository can choose to either write incrementally
 	// using these events, or wait until OnChangesCompleted to write the whole aggregate once at the end.
 	// The entity does not care which option is leveraged; it is simply letting the repository know when
@@ -75,7 +92,7 @@ type Booking struct {
 	bookingRepository BookingRepository
 
 	ID uuid.UUID
-	NumberOfPassengers int
+	numberOfPassengers int
 	Outbound Journey
 	Inbound Journey
 }
@@ -110,6 +127,7 @@ func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
 func (booking *Booking) FinalizeChanges () error {
 	stagedChanges := BookingChanges {
 		ID: booking.ID,
+		NumberOfPassengers: booking.numberOfPassengers,
 	}
 
 	if booking.Inbound.modified {

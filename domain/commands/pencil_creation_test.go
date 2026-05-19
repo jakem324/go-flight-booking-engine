@@ -11,11 +11,6 @@ import (
 type BookingRepositoryMock struct {
 	mock.Mock
 	entities.BookingRepository
-	initializeBookingIDFn func() (uuid.UUID, error)
-	validateBookingIDFn func(ID uuid.UUID) (bool, error)
-	onSeatsAllocatedFn func(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
-	onSeatsDeallocatedFn func(bookingID uuid.UUID, isInboundJourney bool)
-	onChangesCompletedFn func(entities.BookingChanges) error
 }
 
 func (m *BookingRepositoryMock) InitializeBookingID() (uuid.UUID, error) {
@@ -35,5 +30,22 @@ func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
 	}
 
 	mock.AssertNotCalled(t, "InitializeBookingID")
+	mock.AssertNotCalled(t, "OnChangesCompleted")
 }
 
+/*
+func CommandWithZeroRequiredSeatsIsRejected(t* testing.T) {
+	mock := new(BookingRepositoryMock)
+	factory := entities.NewBookingFactory(mock)
+
+	dto := CreatePencilBookingDto{ RequiredNumberOfSeats: 0 }
+	_, err := CreatePencilBooking(factory, dto)
+
+	if assert.NotNil(t, err) {
+		assert.Equal(t, "invalid number of passengers", err.Error())
+	}
+
+	mock.AssertNotCalled(t, "InitializeBookingID")
+	mock.AssertNotCalled(t, "OnChangesCompleted")
+}
+*/

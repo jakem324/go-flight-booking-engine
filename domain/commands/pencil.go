@@ -16,8 +16,7 @@ func CreatePencilBooking(factory entities.BookingFactory, dto CreatePencilBookin
 		return uuid.Nil, err
 	}
 
-	booking.NumberOfPassengers = dto.RequiredNumberOfSeats
-	seatsUnavailable, err := tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs, dto.RequiredNumberOfSeats)
+	seatsUnavailable, err := tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs)
 
 	if seatsUnavailable {
 		return uuid.Nil, errors.New("Seat(s) no longer available")
@@ -46,7 +45,7 @@ func SetInboundJourney(factory entities.BookingFactory, dto SetInboundJourneyDto
 		return err
 	}
 
-	seatsUnavailable, err := tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs, booking.NumberOfPassengers)
+	seatsUnavailable, err := tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs)
 
 	if seatsUnavailable {
 		return errors.New("Seat(s) no longer available")
@@ -64,10 +63,10 @@ func SetInboundJourney(factory entities.BookingFactory, dto SetInboundJourneyDto
 	return nil
 }
 
-func tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID, requiredSeats int) (bool, error) {
+func tryBookSeats(journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := entities.NewFlight(proposedLeg)
-			seatsObtained, err := flight.TryBookSeats(journey, requiredSeats)
+			seatsObtained, err := flight.TryBookSeats(journey)
 			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 
