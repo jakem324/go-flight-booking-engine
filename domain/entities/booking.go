@@ -21,6 +21,7 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (Booking, error
 	}
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
+	booking.flightFactory = factory.flightFactory
 	id, err := booking.bookingRepository.InitializeBooking(InitializeBookingDto{
 		NumberOfPassengers: numberOfPassengers,
 	})
