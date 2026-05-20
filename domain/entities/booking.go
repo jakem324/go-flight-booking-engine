@@ -2,8 +2,6 @@ package entities
 
 import (
 	"errors"
-	"log"
-
 	"github.com/google/uuid"
 )
 
@@ -150,7 +148,6 @@ func (booking *Booking) FinalizeChanges () error {
 		stagedChanges.OutboundLegs = booking.Outbound.legs
 	}
 	
-	log.Printf("OnChangesCompleted %v", stagedChanges)
 	err := booking.bookingRepository.OnChangesCompleted(stagedChanges);
 
 	if err != nil {

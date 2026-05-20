@@ -1,7 +1,6 @@
 // Package entities houses the domain objects
 package entities
 
-import "log"
 import "github.com/google/uuid"
 
 type FlightFactory struct {
@@ -29,7 +28,6 @@ func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
 }
 
 func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
-	log.Printf("TBS %v", journey.Parent.numberOfPassengers)
 	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.ID, journey.Parent.numberOfPassengers)
 	if err != nil {
 		return false, err
