@@ -62,7 +62,7 @@ func (handler *PencilBookingHandler) SetInboundJourney(dto SetInboundJourneyDto)
 	seatsUnavailable, err := handler.tryBookSeats(&booking.Inbound, dto.InboundJourneyLegs)
 
 	if seatsUnavailable {
-		return errors.New("Seat(s) no longer available")
+		return errors.New("seat(s) no longer available")
 	}
 
 	if err != nil {

@@ -8,6 +8,119 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+/*
+	TestCreatePencilBooking_AllSeatsAvailable
+	Scenario: Create Pencil Booking when seats are available on specified flights
+	All happy-path assertions:
+	 - Booking initialized via booking repo
+	 - Requested (available) seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Changes finalized via booking repo
+	 - Created booking ID returned
+
+	TestCreatePencilBooking_Partial
+	Scenario: Create Pencil Booking when seats are unavailable on one or more specified flights
+	All assertions:
+	 - Booking initialized via booking repo
+	 - Requested seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
+	 - Deallocated seats relleased via flight repo
+	 - Changes NOT finalized via booking repo
+	 - Error returned stating seat(s) no longer available
+
+	 Scenario: Set inbound journey with available seats
+	 Assertions:
+	 - Requested (available) seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Changes finalized via booking repo
+	 - Nil error returned
+
+	 Scenario: Set inbound journey with invalid booking ID
+	 Assertions:
+	 - Invalid booking ID error returned
+
+	 Scenario: Set inbound journey when sets are unavailable on one or more flights
+	 Assertions:
+	 - Requested seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
+	 - Deallocated seats relleased via flight repo
+	 - Changes NOT finalized via booking repo
+	 - Error returned stating seat(s) no longer available
+
+*/
+
+/*
+	TestCreatePencilBooking_AllSeatsAvailable
+	Scenario: Create Pencil Booking when seats are available on specified flights
+	All happy-path assertions:
+	 - Booking initialized via booking repo
+	 - Requested (available) seats locked via flight repo
+	 - Locked seats allocated via booking repo
+	 - Changes finalized via booking repo
+	 - Created booking ID returned
+*/
+
+func TestCreatePencilBooking_AllSeatsAvailable(t* testing.T) {
+	fixture := CreateFixture()
+
+	bookingID := uuid.New()
+	passengers := 5
+	firstFlightID := uuid.New()
+	secondFlightID := uuid.New()
+
+	dto := CreatePencilBookingDto{
+		RequiredNumberOfSeats: passengers,
+		OutboundJourneyLegs: []uuid.UUID { firstFlightID, secondFlightID },	
+	}
+
+	expectedInitializationDto := entities.InitializeBookingDto{
+		NumberOfPassengers: passengers,
+	}
+
+	fixture.bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
+	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
+		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	fixture.flightRepositoryMock.On(
+		"LockSeats",
+		firstFlightID,
+		).Return([]int {472, 673, 839}, nil)
+	fixture.flightRepositoryMock.On(
+		"LockSeats",
+		secondFlightID,
+		).Return([]int {293, 572, 904}, nil)
+	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false).Return(nil)
+	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
+
+	result, err := fixture.handler.CreatePencilBooking(dto)
+
+	expectedChangesDto := entities.BookingChanges{
+		ID: bookingID,
+		NumberOfPassengers: passengers,
+		InboundLegs: []entities.JourneyLeg {
+			{
+				FlightID: firstFlightID,
+				SeatLockIDs: []int {472, 673, 839},
+			},
+			{
+				FlightID: secondFlightID,
+				SeatLockIDs: []int {293, 572, 904},
+			},
+		},
+	}
+
+	if assert.Nil(t, err) {
+		fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
+		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
+		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
+		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {472, 673, 839})
+		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {293, 572, 904})
+		fixture.bookingRepositoryMock.AssertCalled(t, "OnChangesCompleted", expectedChangesDto)
+		assert.Equal(t, bookingID, result)
+	}
+}
+
 type BookingRepositoryMock struct {
 	mock.Mock
 	entities.BookingRepository
@@ -123,44 +236,46 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 }
 
 /*
-	TestCreatePencilBooking_AllSeatsAvailable
-	Scenario: Create Pencil Booking when seats are available on specified flights 
-	All happy-path assertions:
-	 - Booking initialized via booking repo
-	 - Requested (available) seats locked via flight repo
-	 - Locked seats allocated via booking repo
-	 - Changes finalized via booking repo 
-	 - Created booking ID returned
+func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
+	fixture := CreateFixture()
 
-	TestCreatePencilBooking_Partial
-	Scenario: Create Pencil Booking when seats are unavailable on one or more specified flights 
-	All assertions:
-	 - Booking initialized via booking repo
-	 - Requested seats locked via flight repo
-	 - Locked seats allocated via booking repo
-	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
-	 - Deallocated seats relleased via flight repo
-	 - Changes NOT finalized via booking repo 
-	 - Error returned stating seat(s) no longer available
+	bookingID := uuid.New()
+	passengers := 5
+	firstFlightID := uuid.New()
+	secondFlightID := uuid.New()
 
-	 Scenario: Set inbound journey with available seats
-	 Assertions:
-	 - Requested (available) seats locked via flight repo
-	 - Locked seats allocated via booking repo
-	 - Changes finalized via booking repo 
-	 - Nil error returned
-		
-	 Scenario: Set inbound journey with invalid booking ID
-	 Assertions:
-	 - Invalid booking ID error returned 
+	dto := CreatePencilBookingDto{
+		RequiredNumberOfSeats: passengers,
+		OutboundJourneyLegs: []uuid.UUID { firstFlightID, secondFlightID },	
+	}
 
-	 Scenario: Set inbound journey when sets are unavailable on one or more flights
-	 Assertions:
-	 - Requested seats locked via flight repo
-	 - Locked seats allocated via booking repo
-	 - Seats subsequently deallocated when unavailability discovered on subsequent flight
-	 - Deallocated seats relleased via flight repo
-	 - Changes NOT finalized via booking repo 
-	 - Error returned stating seat(s) no longer available
+	expectedInitializationDto := entities.InitializeBookingDto{
+		NumberOfPassengers: passengers,
+	}
 
+	fixture.bookingRepositoryMock.On("InitializeBooking", expectedInitializationDto).Return(bookingID, nil)
+	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
+		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+	fixture.flightRepositoryMock.On(
+		"LockSeats",
+		firstFlightID,
+		).Return([]int {472, 673, 839}, nil)
+	fixture.flightRepositoryMock.On(
+		"LockSeats",
+		secondFlightID,
+		).Return(nil, nil)
+	// ^ will produce "seat(s) no longer available" due to nil error
+	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false).Return(nil)
+	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
+
+	_, err := fixture.handler.CreatePencilBooking(dto)
+
+	if assert.Nil(t, err) {
+		fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
+		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
+		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
+		fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", firstFlightID, []int{472, 673, 839})
+	//LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error)
+	}
+}
 */
