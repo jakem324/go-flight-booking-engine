@@ -52,7 +52,6 @@ func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
 		return nil, err
 	}
 
-	booking.Inbound.isInboundJourney = true
 	booking.ID = ID
 	booking.numberOfPassengers = result.NumberOfPassengers
 	booking.Outbound = Journey{
@@ -61,6 +60,7 @@ func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
 	booking.Inbound = Journey{
 		Parent: &booking,
 	}
+	booking.Inbound.isInboundJourney = true
 	return &booking, nil
 }
 
