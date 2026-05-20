@@ -13,9 +13,9 @@ func NewBookingFactory(bookingRepository BookingRepository, flightFactory Flight
 	return factory
 }
 
-func (factory BookingFactory) NewBooking(numberOfPassengers int) (*Booking, error) {
+func (factory BookingFactory) NewBooking(numberOfPassengers int) (Booking, error) {
 	if numberOfPassengers < 1 {
-		return nil, errors.New("invalid number of passengers")
+		return Booking{}, errors.New("invalid number of passengers")
 	}
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
@@ -24,13 +24,19 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (*Booking, erro
 	})
 
 	if err != nil {
-		return nil, err
+		return Booking{}, err
 	}
 
 	booking.ID = id
 	booking.numberOfPassengers = numberOfPassengers
+	booking.Outbound = Journey{
+		Parent: &booking,
+	}
+	booking.Inbound = Journey{
+		Parent: &booking,
+	}
 	booking.Inbound.isInboundJourney = true
-	return &booking, nil
+	return booking, nil
 }
 
 func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {

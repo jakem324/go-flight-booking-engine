@@ -1,6 +1,7 @@
 // Package commands houses the handlers for all commands within the domain
 package commands
 
+import "log"
 import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
@@ -30,6 +31,9 @@ func (handler *PencilBookingHandler) CreatePencilBooking(dto CreatePencilBooking
 		return uuid.Nil, err
 	}
 
+	log.Printf("Booking object %v", booking)
+	log.Printf("Outbound journey object %v", booking.Outbound)
+	log.Printf("Outbound journey parent %v", booking.Outbound.Parent)
 	seatsUnavailable, err := handler.tryBookSeats(&booking.Outbound, dto.OutboundJourneyLegs)
 
 	if seatsUnavailable {
