@@ -123,6 +123,7 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 }
 
 /*
+	TestCreatePencilBooking_AllSeatsAvailable
 	Scenario: Create Pencil Booking when seats are available on specified flights 
 	All happy-path assertions:
 	 - Booking initialized via booking repo
@@ -131,7 +132,8 @@ func TestCreatePencilBooking_BookingIsInitialized(t* testing.T) {
 	 - Changes finalized via booking repo 
 	 - Created booking ID returned
 
-	Scenario: Create Pencil Booking when seats are available on one or more specified flights 
+	TestCreatePencilBooking_Partial
+	Scenario: Create Pencil Booking when seats are unavailable on one or more specified flights 
 	All assertions:
 	 - Booking initialized via booking repo
 	 - Requested seats locked via flight repo
