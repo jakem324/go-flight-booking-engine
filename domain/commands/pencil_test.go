@@ -9,10 +9,6 @@ import (
 )
 
 /*
-	 Scenario: Set inbound journey with invalid booking ID
-	 Assertions:
-	 - Invalid booking ID error returned
-
 	 Scenario: Set inbound journey when sets are unavailable on one or more flights
 	 Assertions:
 	 - Requested seats locked via flight repo
@@ -239,3 +235,34 @@ func TestSetInboundJourney_AllSeatsAvailable(t* testing.T) {
 		fixture.bookingRepositoryMock.AssertCalled(t, "OnChangesCompleted", expectedChangesDto)
 	}
 }
+
+/*
+	 Scenario: Set inbound journey with invalid booking ID
+	 Assertions:
+	 - Invalid booking ID error returned
+*/
+
+func TestSetInboundJourney_InvalidBookingId(t* testing.T) {
+	// Arrange
+	fixture := CreateFixture()
+	fixture.bookingRepositoryMock.On("ValidateBooking", mock.Anything).Return(
+		entities.ValidateBookingResult{
+			BookingExists: false,
+			NumberOfPassengers: 0,
+		}, nil)
+
+	bookingID := uuid.New()
+	firstFlightID := uuid.New()
+	secondFlightID := uuid.New()
+	dto := SetInboundJourneyDto{
+		BookingID: bookingID,
+		InboundJourneyLegs: []uuid.UUID { firstFlightID, secondFlightID },	
+	}
+
+	// Act
+	err := fixture.handler.SetInboundJourney(dto)
+
+	// Assert
+	assert.Equal(t, "booking not found", err.Error())
+}
+
