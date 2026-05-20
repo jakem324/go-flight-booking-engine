@@ -100,7 +100,7 @@ func TestCreatePencilBooking_AllSeatsAvailable(t* testing.T) {
 	expectedChangesDto := entities.BookingChanges{
 		ID: bookingID,
 		NumberOfPassengers: passengers,
-		InboundLegs: []entities.JourneyLeg {
+		OutboundLegs: []entities.JourneyLeg {
 			{
 				FlightID: firstFlightID,
 				SeatLockIDs: []int {472, 673, 839},
@@ -117,7 +117,7 @@ func TestCreatePencilBooking_AllSeatsAvailable(t* testing.T) {
 		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
 		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
 		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {472, 673, 839})
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {293, 572, 904})
+		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, secondFlightID, []int {293, 572, 904})
 		fixture.bookingRepositoryMock.AssertCalled(t, "OnChangesCompleted", expectedChangesDto)
 		assert.Equal(t, bookingID, result)
 	}

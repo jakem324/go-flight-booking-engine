@@ -1,7 +1,11 @@
 package entities
 
-import "errors"
-import "github.com/google/uuid"
+import (
+	"errors"
+	"log"
+
+	"github.com/google/uuid"
+)
 
 type BookingFactory struct {
 	bookingRepository BookingRepository
@@ -145,7 +149,8 @@ func (booking *Booking) FinalizeChanges () error {
 	if booking.Outbound.modified {
 		stagedChanges.OutboundLegs = booking.Outbound.legs
 	}
-
+	
+	log.Printf("OnChangesCompleted %v", stagedChanges)
 	err := booking.bookingRepository.OnChangesCompleted(stagedChanges);
 
 	if err != nil {
