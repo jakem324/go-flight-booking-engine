@@ -2,9 +2,8 @@ package entities
 
 import (
 	"errors"
-
+	"log"
 	"github.com/google/uuid"
-	"honnef.co/go/tools/printf"
 )
 
 type BookingFactory struct {
@@ -47,20 +46,21 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (Booking, error
 func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
+	booking.flightFactory = factory.flightFactory
 	result, err := booking.bookingRepository.ValidateBooking(ID)
 	if !result.BookingExists || err != nil {
 		return nil, err
 	}
 
+	booking.Inbound.isInboundJourney = true
+	booking.ID = ID
+	booking.numberOfPassengers = result.NumberOfPassengers
 	booking.Outbound = Journey{
 		Parent: &booking,
 	}
 	booking.Inbound = Journey{
 		Parent: &booking,
 	}
-	booking.Inbound.isInboundJourney = true
-	booking.ID = ID
-	booking.numberOfPassengers = result.NumberOfPassengers
 	return &booking, nil
 }
 
@@ -115,6 +115,7 @@ type Booking struct {
 }
 
 func (journey *Journey) ReleaseAllSeats() {
+	log.Printf("ReleaseAllSeats %v", journey.Parent.flightFactory)
 	journey.Parent.bookingRepository.OnSeatsDeallocated(journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.legs {
 		flight := journey.Parent.flightFactory.NewFlight(leg.FlightID)
