@@ -178,7 +178,7 @@ func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
 	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
 	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {472, 673, 839})
 	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int {582, 612, 783})
+	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, secondFlightID, []int {582, 612, 783})
 	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", thirdFlightID, passengers) // <-- availability failure here
 	// Seats deallocated for entire journey (including previous two flights)
 	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsDeallocated", bookingID, false)
@@ -186,7 +186,7 @@ func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
 	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", firstFlightID, []int{472, 673, 839})
 	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", secondFlightID, []int{582, 612, 783})
 	// "seat(s) no longer available" returned as error
-	assert.Equal(t, "seat(s) no longer available", err.Error())
+	assert.Equal(t, "Seat(s) no longer available", err.Error())
 }
 
 type BookingRepositoryMock struct {
