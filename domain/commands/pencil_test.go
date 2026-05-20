@@ -230,7 +230,11 @@ type FlightRepositoryMock struct {
 
 func (m *FlightRepositoryMock) LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error) {
 	args := m.Called(flightID, numberOfSeats)
-	return args.Get(0).([]int), args.Error(1)
+	var seats []int
+	if args.Get(0) != nil {
+		seats = args.Get(0).([]int)
+	}
+	return seats, args.Error(1)
 }
 
 func (m *FlightRepositoryMock) ReleaseSeats(flightID uuid.UUID, seatLockIDs []int) {
