@@ -21,15 +21,16 @@ func (flightRepository FlightRepository) LockSeats(
 	err := flightRepository.db.QueryRow(ctx, command, flightID, numberOfSeats).Scan(
 		flightValid, seatsAvailable, seatLockIDs)
 	if err != nil {
-		return []int{}, err
+		return nil, err
 	}
 
 	if !flightValid {
-		return []int{}, errors.New("flight not found")
+		// TODO - surface as a result object; handle specific errors upstream
+		return nil, errors.New("flight not found")
 	}
 
 	if !seatsAvailable {
-		return []int{}, errors.New("seat(s) no longer available")
+		return nil, nil
 	}
 
 	return seatLockIDs, nil
