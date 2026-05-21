@@ -21,6 +21,30 @@ func NewPencilBookingHandler (
 	}
 }
 
+type BookingNotFoundError struct {
+	BookingID uuid.UUID
+}
+
+func (e *BookingNotFoundError) Error() string {
+	return fmt.Sprintf("booking not found: %v", e.BookingID)
+}
+
+func (e *BookingNotFoundError) Is(target error) bool {
+	_, ok := target.(*BookingNotFoundError)
+	return ok
+}
+
+type SeatsUnavailableError struct {}
+
+func (e *SeatsUnavailableError) Error() string {
+	return "seat(s) no longer available"
+}
+
+func (e *SeatsUnavailableError) Is(target error) bool {
+	_, ok := target.(*SeatsUnavailableError)
+	return ok
+}
+
 type CreatePencilBookingDto struct {
 	RequiredNumberOfSeats int
 	OutboundJourneyLegs []uuid.UUID
@@ -39,7 +63,7 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 	}
 
 	if seatsUnavailable {
-		return uuid.Nil, errors.New("seat(s) no longer available")
+		return uuid.Nil, &SeatsUnavailableError{}
 	}
 
 	err = booking.FinalizeChanges(ctx)
@@ -53,19 +77,6 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 type SetInboundJourneyDto struct {
 	BookingID uuid.UUID
 	InboundJourneyLegs []uuid.UUID
-}
-
-type BookingNotFoundError struct {
-	BookingID uuid.UUID
-}
-
-func (e *BookingNotFoundError) Error() string {
-	return fmt.Sprintf("booking not found: %v", e.BookingID)
-}
-
-func (e *BookingNotFoundError) Is(target error) bool {
-	_, ok := target.(*BookingNotFoundError)
-	return ok
 }
 
 func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto SetInboundJourneyDto) error {
