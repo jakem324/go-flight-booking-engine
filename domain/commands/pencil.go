@@ -31,14 +31,10 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 		return uuid.Nil, err
 	}
 
-	badFlightID, seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Outbound, dto.OutboundJourneyLegs)
+	seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Outbound, dto.OutboundJourneyLegs)
 
 	if err != nil {
 		return uuid.Nil, err
-	}
-
-	if badFlightID {
-		return uuid.Nil, errors.New("flight ID not found")
 	}
 
 	if seatsUnavailable {
@@ -68,12 +64,7 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 		return errors.New("booking not found")
 	}
 
-	badFlightID, seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Inbound, dto.InboundJourneyLegs)
-
-	if badFlightID {
-		return errors.New("flight ID not found")
-	}
-
+	seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Inbound, dto.InboundJourneyLegs)
 	if seatsUnavailable {
 		return errors.New("seat(s) no longer available")
 	}
@@ -90,11 +81,11 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 	return nil
 }
 
-func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, bool, error) {
+func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := handler.flightFactory.NewFlight(proposedLeg)
-			outcome, err := flight.TryBookSeats(ctx, journey)
-			if !outcome.SeatsObtained || err != nil {
+			seatsObtained, err := flight.TryBookSeats(ctx, journey)
+			if !seatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 
 				// effort to avoid leaving orphan seat locks, but a background service will need 
@@ -108,16 +99,14 @@ func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *
 			}
 			
 			if err != nil {
-				return false, false, err
+				return false, err
 			}
 
-			if !outcome.SeatsObtained {
-				badFlightID := !outcome.FlightIDFound
-				seatsUnavailable := outcome.FlightIDFound && !outcome.SeatsObtained
-				return badFlightID, seatsUnavailable, nil
+			if !seatsObtained {
+				return true, nil
 			}
 		}
 
-		return false, false, nil
+		return false, nil
 }
 

@@ -2,6 +2,7 @@
 package entities
 
 import "context"
+import "fmt"
 import "github.com/google/uuid"
 
 type FlightFactory struct {
@@ -34,26 +35,35 @@ func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
 	return Flight{ ID: id, flightRespository: factory.flightRepository }
 }
 
-type TryBookSeatsOutcome struct {
-	FlightIDFound bool
-	SeatsObtained bool
+type FlightIDNotFoundError struct {
+	FlightID uuid.UUID
 }
 
-func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (TryBookSeatsOutcome, error) {
+func (e *FlightIDNotFoundError) Error() string {
+	return fmt.Sprintf("flight ID not found: %v", e.FlightID)
+}
+
+func (e *FlightIDNotFoundError) Is(target error) bool {
+	_, ok := target.(*FlightIDNotFoundError)
+	return ok
+}
+
+func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, error) {
 	result, err := flight.flightRespository.LockSeats(ctx, flight.ID, journey.Parent.numberOfPassengers)
 	if err != nil {
-		return TryBookSeatsOutcome{}, err
+		return false, err
 	}
 
 	err = journey.AllocateSeats(ctx, flight, result.ObtainedSeatLockIDs)
 	if err != nil {
-		return TryBookSeatsOutcome{}, err
+		return false, err
 	}
 
-	return TryBookSeatsOutcome{
-		FlightIDFound: result.ValidFlightID,
-		SeatsObtained: result.SeatsAvailable,
-	}, nil
+	if !result.ValidFlightID {
+		return false, &FlightIDNotFoundError{ FlightID: flight.ID }
+	}
+
+	return result.SeatsAvailable, nil
 }
 
 func (flight Flight) ReleaseSeats(ctx context.Context, seatLockIDs []int) {
