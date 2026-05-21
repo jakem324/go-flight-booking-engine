@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"testing"
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
@@ -49,7 +50,8 @@ func TestCreatePencilBooking_AllSeatsAvailable(t* testing.T) {
 	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
 	// Act
-	result, err := fixture.handler.CreatePencilBooking(dto)
+	ctx := context.Background()
+	result, err := fixture.handler.CreatePencilBooking(ctx, dto)
 
 	// Assert
 	expectedInitializationDto := entities.InitializeBookingDto{
@@ -132,7 +134,8 @@ func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
 	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, false).Return(nil)
 
 	// Act
-	_, err := fixture.handler.CreatePencilBooking(dto)
+	ctx := context.Background()
+	_, err := fixture.handler.CreatePencilBooking(ctx, dto)
 
 	// Assert
 	expectedInitializationDto := entities.InitializeBookingDto{
@@ -196,7 +199,8 @@ func TestSetInboundJourney_AllSeatsAvailable(t* testing.T) {
 	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
 	// Act
-	err := fixture.handler.SetInboundJourney(dto)
+	ctx := context.Background()
+	err := fixture.handler.SetInboundJourney(ctx, dto)
 
 	// Assert
 	expectedChangesDto := entities.BookingChanges{
@@ -247,7 +251,8 @@ func TestSetInboundJourney_InvalidBookingId(t* testing.T) {
 	}
 
 	// Act
-	err := fixture.handler.SetInboundJourney(dto)
+	ctx := context.Background()
+	err := fixture.handler.SetInboundJourney(ctx, dto)
 
 	// Assert
 	assert.Equal(t, "booking not found", err.Error())
@@ -306,7 +311,8 @@ func TestSetInboundJourney_PartialUnavailable(t* testing.T) {
 	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, mock.Anything).Return(nil)
 
 	// Act
-	err := fixture.handler.SetInboundJourney(dto)
+	ctx := context.Background()
+	err := fixture.handler.SetInboundJourney(ctx, dto)
 
 	// Assert
 	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)

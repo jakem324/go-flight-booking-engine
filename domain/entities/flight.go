@@ -1,6 +1,7 @@
 // Package entities houses the domain objects
 package entities
 
+import "context"
 import "github.com/google/uuid"
 
 type FlightFactory struct {
@@ -13,8 +14,8 @@ func NewFlightFactory(flightRepository FlightRepository) FlightFactory {
 }
 
 type FlightRepository interface {
-	LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error)
-	ReleaseSeats(flightID uuid.UUID, seatLockIDs []int) 
+	LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) ([]int, error)
+	ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int) 
 }
 
 type Flight struct {
@@ -27,8 +28,8 @@ func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
 	return Flight{ ID: id, flightRespository: factory.flightRepository }
 }
 
-func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
-	obtainedSeatLocks, err := flight.flightRespository.LockSeats(flight.ID, journey.Parent.numberOfPassengers)
+func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, error) {
+	obtainedSeatLocks, err := flight.flightRespository.LockSeats(ctx, flight.ID, journey.Parent.numberOfPassengers)
 	if err != nil {
 		return false, err
 	}
@@ -37,7 +38,7 @@ func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
 		return false, nil
 	}
 
-	err = journey.AllocateSeats(flight, obtainedSeatLocks)
+	err = journey.AllocateSeats(ctx, flight, obtainedSeatLocks)
 	if err != nil {
 		return false, err
 	}
@@ -45,7 +46,7 @@ func (flight Flight) TryBookSeats(journey *Journey) (bool, error) {
 	return true, nil
 }
 
-func (flight Flight) ReleaseSeats(seatLockIDs []int) {
-	flight.flightRespository.ReleaseSeats(flight.ID, seatLockIDs)
+func (flight Flight) ReleaseSeats(ctx context.Context, seatLockIDs []int) {
+	flight.flightRespository.ReleaseSeats(ctx, flight.ID, seatLockIDs)
 }
 

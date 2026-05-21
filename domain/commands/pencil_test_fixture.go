@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
@@ -11,17 +12,18 @@ type BookingRepositoryMock struct {
 	entities.BookingRepository
 }
 
-func (m *BookingRepositoryMock) InitializeBooking(dto entities.InitializeBookingDto) (uuid.UUID, error) {
+func (m *BookingRepositoryMock) InitializeBooking(ctx context.Context, dto entities.InitializeBookingDto) (uuid.UUID, error) {
 	args := m.Called(dto)
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
-func (m *BookingRepositoryMock) ValidateBooking(ID uuid.UUID) (entities.ValidateBookingResult, error) {
+func (m *BookingRepositoryMock) ValidateBooking(ctx context.Context, ID uuid.UUID) (entities.ValidateBookingResult, error) {
 	args := m.Called(ID)
 	return args.Get(0).(entities.ValidateBookingResult), args.Error(1)
 }
 
 func (m *BookingRepositoryMock) OnSeatsAllocated(
+	ctx context.Context, 
 	bookingID uuid.UUID,
 	isInboundJourney bool,
 	flightID uuid.UUID,
@@ -31,11 +33,11 @@ func (m *BookingRepositoryMock) OnSeatsAllocated(
 	return args.Error(0)
 }
 
-func (m *BookingRepositoryMock) OnSeatsDeallocated(bookingID uuid.UUID, isInboundJourney bool) {
+func (m *BookingRepositoryMock) OnSeatsDeallocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool) {
 	m.Called(bookingID, isInboundJourney)
 }
 
-func (m *BookingRepositoryMock) OnChangesCompleted(changes entities.BookingChanges) error {
+func (m *BookingRepositoryMock) OnChangesCompleted(ctx context.Context, changes entities.BookingChanges) error {
 	args := m.Called(changes)
 	return args.Error(0)
 }
@@ -45,7 +47,7 @@ type FlightRepositoryMock struct {
 	entities.FlightRepository
 }
 
-func (m *FlightRepositoryMock) LockSeats(flightID uuid.UUID, numberOfSeats int) ([]int, error) {
+func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) ([]int, error) {
 	args := m.Called(flightID, numberOfSeats)
 	var seats []int
 	if args.Get(0) != nil {
@@ -54,7 +56,7 @@ func (m *FlightRepositoryMock) LockSeats(flightID uuid.UUID, numberOfSeats int) 
 	return seats, args.Error(1)
 }
 
-func (m *FlightRepositoryMock) ReleaseSeats(flightID uuid.UUID, seatLockIDs []int) {
+func (m *FlightRepositoryMock) ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int) {
 	m.Called(flightID, seatLockIDs)
 }
 

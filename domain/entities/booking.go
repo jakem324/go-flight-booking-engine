@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"context"
 	"errors"
 	"log"
 	"github.com/google/uuid"
@@ -16,14 +17,14 @@ func NewBookingFactory(bookingRepository BookingRepository, flightFactory Flight
 	return factory
 }
 
-func (factory BookingFactory) NewBooking(numberOfPassengers int) (Booking, error) {
+func (factory BookingFactory) NewBooking(ctx context.Context, numberOfPassengers int) (Booking, error) {
 	if numberOfPassengers < 1 {
 		return Booking{}, errors.New("invalid number of passengers")
 	}
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
 	booking.flightFactory = factory.flightFactory
-	id, err := booking.bookingRepository.InitializeBooking(InitializeBookingDto{
+	id, err := booking.bookingRepository.InitializeBooking(ctx, InitializeBookingDto{
 		NumberOfPassengers: numberOfPassengers,
 	})
 
@@ -43,11 +44,11 @@ func (factory BookingFactory) NewBooking(numberOfPassengers int) (Booking, error
 	return booking, nil
 }
 
-func (factory BookingFactory) ExistingBooking(ID uuid.UUID) (*Booking, error) {
+func (factory BookingFactory) ExistingBooking(ctx context.Context, ID uuid.UUID) (*Booking, error) {
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
 	booking.flightFactory = factory.flightFactory
-	result, err := booking.bookingRepository.ValidateBooking(ID)
+	result, err := booking.bookingRepository.ValidateBooking(ctx, ID)
 	if !result.BookingExists || err != nil {
 		return nil, err
 	}
@@ -81,15 +82,15 @@ type ValidateBookingResult struct {
 }
 
 type BookingRepository interface {
-	InitializeBooking(dto InitializeBookingDto) (uuid.UUID, error)
-	ValidateBooking(ID uuid.UUID) (ValidateBookingResult, error)
+	InitializeBooking(ctx context.Context, dto InitializeBookingDto) (uuid.UUID, error)
+	ValidateBooking(ctx context.Context, ID uuid.UUID) (ValidateBookingResult, error)
 	// "Event" language intentional: the implemented repository can choose to either write incrementally
 	// using these events, or wait until OnChangesCompleted to write the whole aggregate once at the end.
 	// The entity does not care which option is leveraged; it is simply letting the repository know when
 	// these state changes are being made. This keeps the entity agnostic of the architectural requirements.
-	OnSeatsAllocated(bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
-	OnSeatsDeallocated(bookingID uuid.UUID, isInboundJourney bool)
-	OnChangesCompleted(BookingChanges) error
+	OnSeatsAllocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
+	OnSeatsDeallocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool)
+	OnChangesCompleted(ctx context.Context, changes BookingChanges) error
 }
 
 type JourneyLeg struct {
@@ -114,19 +115,20 @@ type Booking struct {
 	Inbound Journey
 }
 
-func (journey *Journey) ReleaseAllSeats() {
+func (journey *Journey) ReleaseAllSeats(ctx context.Context) {
 	log.Printf("ReleaseAllSeats %v", journey.Parent.flightFactory)
-	journey.Parent.bookingRepository.OnSeatsDeallocated(journey.Parent.ID, journey.isInboundJourney)
+	journey.Parent.bookingRepository.OnSeatsDeallocated(ctx, journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.legs {
 		flight := journey.Parent.flightFactory.NewFlight(leg.FlightID)
-		flight.ReleaseSeats(leg.SeatLockIDs)
+		flight.ReleaseSeats(ctx, leg.SeatLockIDs)
 	}
 	journey.legs = nil
 	journey.modified = true
 }
 
-func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
+func (journey *Journey) AllocateSeats(ctx context.Context, flight Flight, seatLockIDs []int) error {
 	err := journey.Parent.bookingRepository.OnSeatsAllocated(
+		ctx,
 		journey.Parent.ID,
 		journey.isInboundJourney,
 		flight.ID,
@@ -142,7 +144,7 @@ func (journey *Journey) AllocateSeats(flight Flight, seatLockIDs []int) error {
 	return nil
 }
 
-func (booking *Booking) FinalizeChanges () error {
+func (booking *Booking) FinalizeChanges (ctx context.Context) error {
 	stagedChanges := BookingChanges {
 		ID: booking.ID,
 		NumberOfPassengers: booking.numberOfPassengers,
@@ -156,7 +158,7 @@ func (booking *Booking) FinalizeChanges () error {
 		stagedChanges.OutboundLegs = booking.Outbound.legs
 	}
 	
-	err := booking.bookingRepository.OnChangesCompleted(stagedChanges);
+	err := booking.bookingRepository.OnChangesCompleted(ctx, stagedChanges);
 
 	if err != nil {
 		return err
