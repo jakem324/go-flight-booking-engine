@@ -14,9 +14,25 @@ func (flightRepository FlightRepository) LockSeats(
 	flightID uuid.UUID,
 	numberOfSeats int,
 ) ([]int, error) {
-	//command := "select * from dbo.try_lock_seats($1, $2)"
-	//rows, err := bookingRepository.db.Query(ctx, command, flightID, numberOfSeats)
-	return []int{}, errors.New("not implemented")
+	var flightValid bool
+	var seatsAvailable bool
+	var seatLockIDs []int
+	command := "select (flight_valid, seats_available, seat_lock_ids) from dbo.try_lock_seats($1, $2)"
+	err := flightRepository.db.QueryRow(ctx, command, flightID, numberOfSeats).Scan(
+		flightValid, seatsAvailable, seatLockIDs)
+	if err != nil {
+		return []int{}, err
+	}
+
+	if !flightValid {
+		return []int{}, errors.New("flight not found")
+	}
+
+	if !seatsAvailable {
+		return []int{}, errors.New("seat(s) no longer available")
+	}
+
+	return seatLockIDs, nil
 }
 
 func (flightRepository FlightRepository) ReleaseSeats(
@@ -25,5 +41,7 @@ func (flightRepository FlightRepository) ReleaseSeats(
 	seatLockIDs []int,
 ) {
 	// Fire-and-forget; failures unimportant
+	command := "delete from dbo.seat_lock where flight_id=$1 id = ANY($2)"
+	flightRepository.db.Exec(ctx, command, flightID, seatLockIDs)
 }
 

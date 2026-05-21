@@ -3,8 +3,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
-
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -65,7 +63,18 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 	isInboundJourney bool,
 	flightID uuid.UUID,
 	seatLockIDs []int) error {
-	return errors.New("not implemented")
+	allocationType := "outbound"
+	if isInboundJourney {
+		allocationType = "inbound"
+	}
+
+	command := `
+		insert into dbo.booking_flight_allocation (booking_id, allocation_type, seat_lock_id)
+		select $1, $2, unnest($3::int[]);
+	`
+
+	_, err := bookingRepository.db.Exec(ctx, command, bookingID, allocationType, seatLockIDs)
+	return err
 }
 
 func (bookingRepository BookingRepository) OnSeatsDeallocated(
@@ -73,6 +82,12 @@ func (bookingRepository BookingRepository) OnSeatsDeallocated(
 	bookingID uuid.UUID,
 	isInboundJourney bool) {
 	// Fire-and-forget; failures unimportant
+	allocationType := "outbound"
+	if isInboundJourney {
+		allocationType = "inbound"
+	}
+	command := "delete from dbo.booking_flight_allocation where booking_id = $1 and allocation_type = $2"
+	bookingRepository.db.Exec(ctx, command, bookingID, bookingID, allocationType)
 }
 
 func (bookingRepository BookingRepository)OnChangesCompleted(
