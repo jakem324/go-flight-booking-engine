@@ -33,16 +33,16 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 
 	badFlightID, seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Outbound, dto.OutboundJourneyLegs)
 
+	if err != nil {
+		return uuid.Nil, err
+	}
+
 	if badFlightID {
 		return uuid.Nil, errors.New("flight ID not found")
 	}
 
 	if seatsUnavailable {
 		return uuid.Nil, errors.New("seat(s) no longer available")
-	}
-
-	if err != nil {
-		return uuid.Nil, err
 	}
 
 	err = booking.FinalizeChanges(ctx)
