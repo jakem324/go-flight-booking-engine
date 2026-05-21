@@ -14,6 +14,8 @@ func (flightRepository FlightRepository) LockSeats(
 	flightID uuid.UUID,
 	numberOfSeats int,
 ) ([]int, error) {
+	//command := "select * from dbo.try_lock_seats($1, $2)"
+	//rows, err := bookingRepository.db.Query(ctx, command, flightID, numberOfSeats)
 	return []int{}, errors.New("not implemented")
 }
 

@@ -1,11 +1,15 @@
 // Package repositories contains all postgres repository implementations
 package repositories
 
-import "context"
-import "errors"
-import "github.com/google/uuid"
-import "booking.engine/domain/entities"
-import "github.com/jackc/pgx/v5/pgxpool"
+import (
+	"context"
+	"errors"
+
+	"booking.engine/domain/entities"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type BookingRepository struct {
 	db *pgxpool.Pool
@@ -15,22 +19,44 @@ func (bookingRepository BookingRepository) InitializeBooking(
 	ctx context.Context, 
 	dto entities.InitializeBookingDto,
 ) (uuid.UUID, error) {
-	/*
 	command := `
 		insert into dbo.booking (number_of_passengers)
 		values($1)
 		returning id`
-	var bookingID int
-	err := db.QueryRow(ctx, query, "alice", "alice@example.com", 30).Scan(&bookingID)
-	*/
-	return uuid.Nil, errors.New("not implemented")
+	var result string
+	err := bookingRepository.db.QueryRow(ctx, command, dto.NumberOfPassengers).Scan(&result)
+	createdBookingID, parseErr := uuid.Parse(result)
+	if parseErr != nil {
+		return uuid.Nil, parseErr
+	}
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return createdBookingID, nil
 }
 
 func (bookingRepository BookingRepository) ValidateBooking(
 	ctx context.Context, 
 	ID uuid.UUID,
 ) (entities.ValidateBookingResult, error) {
-	return entities.ValidateBookingResult{}, errors.New("not implemented")
+	var numberOfPassengers int
+	err := bookingRepository.db.QueryRow(
+		ctx,
+		"select number_of_passengers from dbo.booking where id=$1",
+		ID).Scan(&numberOfPassengers)
+	if err == pgx.ErrNoRows {
+		return entities.ValidateBookingResult{
+			BookingExists: false,
+		}, nil
+	}
+	if err != nil {
+		return entities.ValidateBookingResult{}, err
+	}
+	
+	return entities.ValidateBookingResult{
+		BookingExists: true,
+		NumberOfPassengers: numberOfPassengers,
+	}, nil
 }
 
 func (bookingRepository BookingRepository) OnSeatsAllocated(
