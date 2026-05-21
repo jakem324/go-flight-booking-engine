@@ -13,6 +13,14 @@ type BookingRepository struct {
 func (bookingRepository BookingRepository) InitializeBooking(
 	dto entities.InitializeBookingDto,
 ) (uuid.UUID, error) {
+	/*
+	command := `
+		insert into dbo.booking (number_of_passengers)
+		values($1)
+		returning id`
+	var bookingID int
+	err := db.QueryRow(ctx, query, "alice", "alice@example.com", 30).Scan(&bookingID)
+	*/
 	return uuid.Nil, errors.New("not implemented")
 }
 
