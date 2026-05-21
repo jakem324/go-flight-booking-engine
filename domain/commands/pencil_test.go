@@ -2,7 +2,9 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"testing"
+
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -276,7 +278,8 @@ func TestSetInboundJourney_InvalidBookingId(t* testing.T) {
 	err := fixture.handler.SetInboundJourney(ctx, dto)
 
 	// Assert
-	assert.Equal(t, "booking not found", err.Error())
+	expectedMessge := fmt.Sprintf("booking not found: %v", bookingID)
+	assert.Equal(t, expectedMessge, err.Error())
 }
 
 /*

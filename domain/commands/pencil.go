@@ -2,6 +2,7 @@
 package commands
 
 import "context"
+import "fmt"
 import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
@@ -54,6 +55,19 @@ type SetInboundJourneyDto struct {
 	InboundJourneyLegs []uuid.UUID
 }
 
+type BookingNotFoundError struct {
+	BookingID uuid.UUID
+}
+
+func (e *BookingNotFoundError) Error() string {
+	return fmt.Sprintf("booking not found: %v", e.BookingID)
+}
+
+func (e *BookingNotFoundError) Is(target error) bool {
+	_, ok := target.(*BookingNotFoundError)
+	return ok
+}
+
 func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto SetInboundJourneyDto) error {
 	booking, err := handler.bookingFactory.ExistingBooking(ctx, dto.BookingID)
 	if err != nil {
@@ -61,7 +75,7 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 	}
 
 	if booking == nil {
-		return errors.New("booking not found")
+		return &BookingNotFoundError{BookingID: dto.BookingID}
 	}
 
 	seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Inbound, dto.InboundJourneyLegs)
