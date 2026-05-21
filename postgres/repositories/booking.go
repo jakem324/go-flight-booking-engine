@@ -4,8 +4,11 @@ package repositories
 import "errors"
 import "github.com/google/uuid"
 import "booking.engine/domain/entities"
+import "github.com/jackc/pgx/v5/pgxpool"
 
-type BookingRepository struct {}
+type BookingRepository struct {
+	db *pgxpool.Pool
+}
 
 func (bookingRepository BookingRepository) InitializeBooking(
 	dto entities.InitializeBookingDto,
