@@ -31,10 +31,14 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 		return uuid.Nil, err
 	}
 
-	seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Outbound, dto.OutboundJourneyLegs)
+	badFlightID, seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Outbound, dto.OutboundJourneyLegs)
+
+	if badFlightID {
+		return uuid.Nil, errors.New("flight ID not found")
+	}
 
 	if seatsUnavailable {
-		return uuid.Nil, errors.New("Seat(s) no longer available")
+		return uuid.Nil, errors.New("seat(s) no longer available")
 	}
 
 	if err != nil {
@@ -59,11 +63,16 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 	if err != nil {
 		return err
 	}
+
 	if booking == nil {
 		return errors.New("booking not found")
 	}
 
-	seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Inbound, dto.InboundJourneyLegs)
+	badFlightID, seatsUnavailable, err := handler.tryBookSeats(ctx, &booking.Inbound, dto.InboundJourneyLegs)
+
+	if badFlightID {
+		return errors.New("flight ID not found")
+	}
 
 	if seatsUnavailable {
 		return errors.New("seat(s) no longer available")
@@ -81,11 +90,11 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 	return nil
 }
 
-func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
+func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, bool, error) {
 		for _, proposedLeg := range proposedLegs {
 			flight := handler.flightFactory.NewFlight(proposedLeg)
-			seatsObtained, err := flight.TryBookSeats(ctx, journey)
-			if !seatsObtained || err != nil {
+			outcome, err := flight.TryBookSeats(ctx, journey)
+			if !outcome.SeatsObtained || err != nil {
 				// NB: The release of the already-allocated seats could fail, but nothing 
 				// can be done about it within this scope. The application will make its best 
 				// effort to avoid leaving orphan seat locks, but a background service will need 
@@ -99,14 +108,16 @@ func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *
 			}
 			
 			if err != nil {
-				return false, err
+				return false, false, err
 			}
 
-			if !seatsObtained {
-				return true, nil
+			if !outcome.SeatsObtained {
+				badFlightID := !outcome.FlightIDFound
+				seatsUnavailable := outcome.FlightIDFound && !outcome.SeatsObtained
+				return badFlightID, seatsUnavailable, nil
 			}
 		}
 
-		return false, nil
+		return false, false, nil
 }
 

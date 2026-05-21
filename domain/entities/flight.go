@@ -13,8 +13,14 @@ func NewFlightFactory(flightRepository FlightRepository) FlightFactory {
 	return factory
 }
 
+type SeatLockResult struct {
+	ValidFlightID bool
+	SeatsAvailable bool
+	ObtainedSeatLockIDs []int
+}
+
 type FlightRepository interface {
-	LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) ([]int, error)
+	LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (SeatLockResult, error)
 	ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int) 
 }
 
@@ -28,22 +34,26 @@ func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
 	return Flight{ ID: id, flightRespository: factory.flightRepository }
 }
 
-func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, error) {
-	obtainedSeatLocks, err := flight.flightRespository.LockSeats(ctx, flight.ID, journey.Parent.numberOfPassengers)
+type TryBookSeatsOutcome struct {
+	FlightIDFound bool
+	SeatsObtained bool
+}
+
+func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (TryBookSeatsOutcome, error) {
+	result, err := flight.flightRespository.LockSeats(ctx, flight.ID, journey.Parent.numberOfPassengers)
 	if err != nil {
-		return false, err
-	}
-	
-	if obtainedSeatLocks == nil {
-		return false, nil
+		return TryBookSeatsOutcome{}, err
 	}
 
-	err = journey.AllocateSeats(ctx, flight, obtainedSeatLocks)
+	err = journey.AllocateSeats(ctx, flight, result.ObtainedSeatLockIDs)
 	if err != nil {
-		return false, err
+		return TryBookSeatsOutcome{}, err
 	}
 
-	return true, nil
+	return TryBookSeatsOutcome{
+		FlightIDFound: result.ValidFlightID,
+		SeatsObtained: result.SeatsAvailable,
+	}, nil
 }
 
 func (flight Flight) ReleaseSeats(ctx context.Context, seatLockIDs []int) {

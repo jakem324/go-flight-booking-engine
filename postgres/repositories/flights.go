@@ -1,9 +1,9 @@
 package repositories
 
 import "context"
-import "errors"
 import "github.com/google/uuid"
 import "github.com/jackc/pgx/v5/pgxpool"
+import "booking.engine/domain/entities"
 
 type FlightRepository struct {
 	db *pgxpool.Pool
@@ -13,27 +13,23 @@ func (flightRepository FlightRepository) LockSeats(
 	ctx context.Context, 
 	flightID uuid.UUID,
 	numberOfSeats int,
-) ([]int, error) {
+) (entities.SeatLockResult, error) {
 	var flightValid bool
 	var seatsAvailable bool
 	var seatLockIDs []int
 	command := "select (flight_valid, seats_available, seat_lock_ids) from dbo.try_lock_seats($1, $2)"
 	err := flightRepository.db.QueryRow(ctx, command, flightID, numberOfSeats).Scan(
 		flightValid, seatsAvailable, seatLockIDs)
+
 	if err != nil {
-		return nil, err
+		return entities.SeatLockResult{}, err
 	}
 
-	if !flightValid {
-		// TODO - surface as a result object; handle specific errors upstream
-		return nil, errors.New("flight not found")
-	}
-
-	if !seatsAvailable {
-		return nil, nil
-	}
-
-	return seatLockIDs, nil
+	return entities.SeatLockResult{
+		ValidFlightID: flightValid,
+		SeatsAvailable: seatsAvailable,
+		ObtainedSeatLockIDs: seatLockIDs,
+	}, nil
 }
 
 func (flightRepository FlightRepository) ReleaseSeats(

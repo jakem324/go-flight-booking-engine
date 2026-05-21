@@ -40,12 +40,18 @@ func TestCreatePencilBooking_AllSeatsAvailable(t* testing.T) {
 		"LockSeats",
 		firstFlightID,
 		passengers,
-		).Return([]int {472, 673, 839}, nil)
+	).Return(entities.SeatLockResult{
+		ValidFlightID: true,
+		SeatsAvailable: true,
+		ObtainedSeatLockIDs: []int {472, 673, 839}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		secondFlightID,
 		passengers,
-		).Return([]int {293, 572, 904}, nil)
+	).Return(entities.SeatLockResult{
+		ValidFlightID: true,
+		SeatsAvailable: true,
+		ObtainedSeatLockIDs: []int {293, 572, 904}}, nil)
 	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
 	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
@@ -118,17 +124,26 @@ func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
 		"LockSeats",
 		firstFlightID,
 		passengers,
-		).Return([]int {472, 673, 839}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {472, 673, 839}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		secondFlightID,
 		passengers,
-		).Return([]int {582, 612, 783}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {582, 612, 783}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		thirdFlightID,
 		passengers,
-		).Return(nil, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
+		).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: false,
+		}, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
 	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
 	fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
 	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, false).Return(nil)
@@ -154,7 +169,7 @@ func TestCreatePencilBooking_PartialUnavailable(t* testing.T) {
 	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", firstFlightID, []int{472, 673, 839})
 	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", secondFlightID, []int{582, 612, 783})
 	// "seat(s) no longer available" returned as error
-	assert.Equal(t, "Seat(s) no longer available", err.Error())
+	assert.Equal(t, "seat(s) no longer available", err.Error())
 }
 
 /*
@@ -189,12 +204,18 @@ func TestSetInboundJourney_AllSeatsAvailable(t* testing.T) {
 		"LockSeats",
 		firstFlightID,
 		passengers,
-		).Return([]int {472, 673, 839}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {472, 673, 839}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		secondFlightID,
 		passengers,
-		).Return([]int {293, 572, 904}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {293, 572, 904}}, nil)
 	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
 
@@ -295,17 +316,27 @@ func TestSetInboundJourney_PartialUnavailable(t* testing.T) {
 		"LockSeats",
 		firstFlightID,
 		passengers,
-		).Return([]int {472, 673, 839}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {472, 673, 839}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		secondFlightID,
 		passengers,
-		).Return([]int {582, 612, 783}, nil)
+	  ).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: true,
+			ObtainedSeatLockIDs: []int {582, 612, 783}}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		thirdFlightID,
 		passengers,
-		).Return(nil, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
+		).Return(entities.SeatLockResult{
+			ValidFlightID: true,
+			SeatsAvailable: false,
+			ObtainedSeatLockIDs: nil,
+		}, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
 	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
 	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, mock.Anything).Return(nil)

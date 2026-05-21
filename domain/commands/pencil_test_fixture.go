@@ -47,13 +47,13 @@ type FlightRepositoryMock struct {
 	entities.FlightRepository
 }
 
-func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) ([]int, error) {
+func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (entities.SeatLockResult, error) {
 	args := m.Called(flightID, numberOfSeats)
-	var seats []int
+	var result entities.SeatLockResult
 	if args.Get(0) != nil {
-		seats = args.Get(0).([]int)
+		result = args.Get(0).(entities.SeatLockResult)
 	}
-	return seats, args.Error(1)
+	return result, args.Error(1)
 }
 
 func (m *FlightRepositoryMock) ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int) {
