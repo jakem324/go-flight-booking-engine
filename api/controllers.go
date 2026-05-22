@@ -26,19 +26,10 @@ func Run() {
 		OutboundJourneyLegs   []uuid.UUID `json:"outboundJourneyLegs" binding:"required"`
 	}
 
-	router.POST("/booking", func(c *gin.Context) {
-		var json CreatePencilBookingRequest
-
-		// Bind incoming JSON to the struct
-		// ShouldBindJSON returns an error if the JSON is invalid or missing required fields
-		if jsonErr := c.ShouldBindJSON(&json); jsonErr != nil {
-			c.Status(http.StatusBadRequest)
-			return
-		}
-
+	router.POST("/booking", WithJSONBody(func(c *gin.Context, body CreatePencilBookingRequest) {
 		createdBookingID, err := handlers.PencilBookingHandler.CreatePencilBooking(c, commands.CreatePencilBookingDto{
-			RequiredNumberOfSeats: json.RequiredNumberOfSeats,
-			OutboundJourneyLegs:   json.OutboundJourneyLegs,
+			RequiredNumberOfSeats: body.RequiredNumberOfSeats,
+			OutboundJourneyLegs:   body.OutboundJourneyLegs,
 		})
 
 		var seatsUnavailableError *commands.SeatsUnavailableError
@@ -57,7 +48,7 @@ func Run() {
 		}
 
 		c.String(http.StatusOK, createdBookingID.String())
-	})
+	}))
 
 	err := router.Run("localhost:8080")
 	if err != nil {
