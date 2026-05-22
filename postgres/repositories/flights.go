@@ -20,19 +20,24 @@ func (flightRepository FlightRepository) LockSeats(
 ) (entities.SeatLockResult, error) {
 	var flightValid bool
 	var seatsAvailable bool
-	var seatLockIDs []int
-	command := "select (flight_valid, seats_available, seat_lock_ids) from dbo.try_lock_seats($1, $2)"
+	var seatLockIDs []int32
+	command := "select flight_valid, seats_available, seat_lock_ids from dbo.try_lock_seats($1, $2)"
 	err := flightRepository.db.QueryRow(ctx, command, flightID, numberOfSeats).Scan(
-		flightValid, seatsAvailable, seatLockIDs)
+		&flightValid, &seatsAvailable, &seatLockIDs)
 
 	if err != nil {
 		return entities.SeatLockResult{}, err
 	}
 
+	convertedLockIDs := make([]int, len(seatLockIDs))
+	for i, v := range seatLockIDs {
+			convertedLockIDs[i] = int(v)
+	}
+
 	return entities.SeatLockResult{
 		ValidFlightID: flightValid,
 		SeatsAvailable: seatsAvailable,
-		ObtainedSeatLockIDs: seatLockIDs,
+		ObtainedSeatLockIDs: convertedLockIDs,
 	}, nil
 }
 
