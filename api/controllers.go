@@ -54,4 +54,6 @@ func Run() {
 
 		c.String(http.StatusOK, createdBookingID.String())
 	})
+
+	router.Run("localhost:8080")
 }
