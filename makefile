@@ -1,6 +1,12 @@
 start-local-dependencies:
-	@docker rm -f booking-engine-db 2>/dev/null || true
-	docker run --name booking-engine-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres
+	@docker rm -f booking-engine-db >/dev/null 2>&1 || true
+	@docker run \
+		--name booking-engine-db \
+		-e POSTGRES_PASSWORD=password \
+		-e POSTGRES_USER=postgres \
+		-e POSTGRES_DB=booking_engine \
+		-p 5432:5432 \
+		-d postgres:16 >/dev/null
 
 stop-local-dependencies:
 	docker stop booking-engine-db

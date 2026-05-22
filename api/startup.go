@@ -20,7 +20,7 @@ type Handlers struct {
 }
 
 func setup(ctx context.Context) Handlers {
-	connString := "postgresql://postgres:password@localhost:5432/postgres"
+	connString := "postgresql://postgres:password@localhost:5432/booking_engine"
 	err := migrateDB(connString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to migrate DB: %v\n", err)
