@@ -13,7 +13,8 @@ type Handlers struct {
 }
 
 func setup(ctx context.Context) Handlers {
-	dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
+	connString := "postgresql://postgres:password@localhost:5432/postgres"
+	dbpool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
 		os.Exit(1)
