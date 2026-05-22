@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"booking.engine/domain/entities"
 )
 
 /*

@@ -1,10 +1,12 @@
 package commands
 
 import (
-	"booking.engine/domain/entities"
 	"context"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
+
+	"booking.engine/domain/entities"
 )
 
 type BookingRepositoryMock struct {

@@ -1,18 +1,20 @@
 package api
 
-import "context"
-import "fmt"
-import "os"
-import "booking.engine/domain/entities"
-import "booking.engine/domain/commands"
-import "booking.engine/postgres/repositories"
-import "github.com/jackc/pgx/v5/pgxpool"
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"os"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"booking.engine/domain/commands"
+	"booking.engine/domain/entities"
+	"booking.engine/postgres/repositories"
 )
 
 type Handlers struct {

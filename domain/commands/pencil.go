@@ -1,11 +1,15 @@
 // Package commands houses the handlers for all commands within the domain
 package commands
 
-import "context"
-import "fmt"
-import "errors"
-import "github.com/google/uuid"
-import "booking.engine/domain/entities"
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
+
+	"booking.engine/domain/entities"
+)
 
 type PencilBookingHandler struct {
 	bookingFactory *entities.BookingFactory

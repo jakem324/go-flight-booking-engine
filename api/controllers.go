@@ -9,10 +9,11 @@ import (
 	"net/http"
 	"os"
 
-	"booking.engine/domain/commands"
-	"booking.engine/domain/entities"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"booking.engine/domain/commands"
+	"booking.engine/domain/entities"
 )
 
 func Run() {

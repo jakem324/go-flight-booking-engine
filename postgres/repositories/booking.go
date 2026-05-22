@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"log"
 
-	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"booking.engine/domain/entities"
 )
 
 type BookingRepository struct {

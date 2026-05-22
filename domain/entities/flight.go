@@ -1,9 +1,12 @@
 // Package entities houses the domain objects
 package entities
 
-import "context"
-import "fmt"
-import "github.com/google/uuid"
+import (
+	"context"
+	"fmt"
+
+	"github.com/google/uuid"
+)
 
 type FlightFactory struct {
 	flightRepository FlightRepository

@@ -3,8 +3,9 @@ package entities
 import (
 	"context"
 	"errors"
-	"github.com/google/uuid"
 	"log"
+
+	"github.com/google/uuid"
 )
 
 type BookingFactory struct {

@@ -1,10 +1,14 @@
 package repositories
 
-import "context"
-import "log"
-import "github.com/google/uuid"
-import "github.com/jackc/pgx/v5/pgxpool"
-import "booking.engine/domain/entities"
+import (
+	"context"
+	"log"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"booking.engine/domain/entities"
+)
 
 type FlightRepository struct {
 	db *pgxpool.Pool
