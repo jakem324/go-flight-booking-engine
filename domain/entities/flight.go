@@ -10,19 +10,19 @@ type FlightFactory struct {
 }
 
 func NewFlightFactory(flightRepository FlightRepository) FlightFactory {
-	factory := FlightFactory{ flightRepository: flightRepository }
+	factory := FlightFactory{flightRepository: flightRepository}
 	return factory
 }
 
 type SeatLockResult struct {
-	ValidFlightID bool
-	SeatsAvailable bool
+	ValidFlightID       bool
+	SeatsAvailable      bool
 	ObtainedSeatLockIDs []int
 }
 
 type FlightRepository interface {
 	LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (SeatLockResult, error)
-	ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int) 
+	ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int)
 }
 
 type Flight struct {
@@ -32,7 +32,7 @@ type Flight struct {
 }
 
 func (factory FlightFactory) NewFlight(id uuid.UUID) Flight {
-	return Flight{ ID: id, flightRespository: factory.flightRepository }
+	return Flight{ID: id, flightRespository: factory.flightRepository}
 }
 
 type FlightIDNotFoundError struct {
@@ -60,7 +60,7 @@ func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, 
 	}
 
 	if !result.ValidFlightID {
-		return false, &FlightIDNotFoundError{ FlightID: flight.ID }
+		return false, &FlightIDNotFoundError{FlightID: flight.ID}
 	}
 
 	return result.SeatsAvailable, nil
@@ -69,4 +69,3 @@ func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, 
 func (flight Flight) ReleaseSeats(ctx context.Context, seatLockIDs []int) {
 	flight.flightRespository.ReleaseSeats(ctx, flight.ID, seatLockIDs)
 }
-

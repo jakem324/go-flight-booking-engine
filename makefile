@@ -38,4 +38,8 @@ stop-api:
 		echo "API is not running."; \
 	fi
 
+lint:
+	golangci-lint run --fix
 
+format:
+	golangci-lint fmt

@@ -10,9 +10,9 @@ import "github.com/jackc/pgx/v5/pgxpool"
 import (
 	"database/sql"
 	"github.com/golang-migrate/migrate/v4"
-  "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-  _ "github.com/golang-migrate/migrate/v4/source/file"
-  _ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Handlers struct {
@@ -45,34 +45,33 @@ func setup(ctx context.Context) (Handlers, *pgxpool.Pool) {
 	}, dbpool
 }
 
-func migrateDB(connString string) error {	
+func migrateDB(connString string) error {
 	db, err := sql.Open(
-    "pgx",
-    connString,
+		"pgx",
+		connString,
 	)
 	if err != nil {
-			return err
+		return err
 	}
 
 	driver, err := pgx.WithInstance(db, &pgx.Config{})
 	if err != nil {
-			return err
+		return err
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-			"file://postgres/migration",
-			"postgres",
-			driver,
+		"file://postgres/migration",
+		"postgres",
+		driver,
 	)
 	if err != nil {
-			return err
+		return err
 	}
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
-			return err
+		return err
 	}
 
 	return nil
 }
-

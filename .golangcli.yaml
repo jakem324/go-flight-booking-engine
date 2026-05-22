@@ -1,0 +1,11 @@
+# .golangci.yml
+linters:
+  enable:
+    - gci
+
+linters-settings:
+  gci:
+    sections:
+      - standard # Captures context, fmt, os, database/sql
+      - default # Captures github.com/jackc/pgx, github.com/golang-migrate
+      - prefix(booking.engine) # Captures your local project modules

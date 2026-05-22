@@ -1,6 +1,7 @@
 package repositories
 
 import "context"
+import "log"
 import "github.com/google/uuid"
 import "github.com/jackc/pgx/v5/pgxpool"
 import "booking.engine/domain/entities"
@@ -14,7 +15,7 @@ func NewFlightRepository(db *pgxpool.Pool) FlightRepository {
 }
 
 func (flightRepository FlightRepository) LockSeats(
-	ctx context.Context, 
+	ctx context.Context,
 	flightID uuid.UUID,
 	numberOfSeats int,
 ) (entities.SeatLockResult, error) {
@@ -31,27 +32,29 @@ func (flightRepository FlightRepository) LockSeats(
 
 	convertedLockIDs := make([]int, len(seatLockIDs))
 	for i, v := range seatLockIDs {
-			convertedLockIDs[i] = int(v)
+		convertedLockIDs[i] = int(v)
 	}
 
 	return entities.SeatLockResult{
-		ValidFlightID: flightValid,
-		SeatsAvailable: seatsAvailable,
+		ValidFlightID:       flightValid,
+		SeatsAvailable:      seatsAvailable,
 		ObtainedSeatLockIDs: convertedLockIDs,
 	}, nil
 }
 
 func (flightRepository FlightRepository) ReleaseSeats(
-	ctx context.Context, 
+	ctx context.Context,
 	flightID uuid.UUID,
 	seatLockIDs []int,
 ) {
 	// Fire-and-forget; failures unimportant
 	convertedLockIDs := make([]int32, len(seatLockIDs))
 	for i, v := range seatLockIDs {
-			convertedLockIDs[i] = int32(v)
+		convertedLockIDs[i] = int32(v)
 	}
 	command := "delete from dbo.seat_lock where flight_id=$1 and id = ANY($2)"
-	flightRepository.db.Exec(ctx, command, flightID, convertedLockIDs)
+	_, err := flightRepository.db.Exec(ctx, command, flightID, convertedLockIDs)
+	if err != nil {
+		log.Printf("Warning: failed to release seats from flight %v. Err: %v", flightID, err)
+	}
 }
-

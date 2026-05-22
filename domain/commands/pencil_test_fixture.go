@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"context"
 	"booking.engine/domain/entities"
+	"context"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 )
@@ -23,7 +23,7 @@ func (m *BookingRepositoryMock) ValidateBooking(ctx context.Context, ID uuid.UUI
 }
 
 func (m *BookingRepositoryMock) OnSeatsAllocated(
-	ctx context.Context, 
+	ctx context.Context,
 	bookingID uuid.UUID,
 	isInboundJourney bool,
 	flightID uuid.UUID,
@@ -62,12 +62,12 @@ func (m *FlightRepositoryMock) ReleaseSeats(ctx context.Context, flightID uuid.U
 
 type Fixture struct {
 	bookingRepositoryMock *BookingRepositoryMock
-	flightRepositoryMock *FlightRepositoryMock
-	
+	flightRepositoryMock  *FlightRepositoryMock
+
 	handler PencilBookingHandler
 }
 
-func CreateFixture () Fixture {
+func CreateFixture() Fixture {
 	bookingRepositoryMock := new(BookingRepositoryMock)
 	flightRepositoryMock := new(FlightRepositoryMock)
 
@@ -78,8 +78,7 @@ func CreateFixture () Fixture {
 
 	return Fixture{
 		bookingRepositoryMock: bookingRepositoryMock,
-		flightRepositoryMock: flightRepositoryMock,
-		handler: handler,
+		flightRepositoryMock:  flightRepositoryMock,
+		handler:               handler,
 	}
 }
-

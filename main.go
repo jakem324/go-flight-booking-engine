@@ -1,6 +1,6 @@
 package main
 
-import  "booking.engine/api"
+import "booking.engine/api"
 
 func main() {
 	api.Run()

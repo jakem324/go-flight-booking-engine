@@ -9,15 +9,15 @@ import "booking.engine/domain/entities"
 
 type PencilBookingHandler struct {
 	bookingFactory *entities.BookingFactory
-	flightFactory *entities.FlightFactory
+	flightFactory  *entities.FlightFactory
 }
 
-func NewPencilBookingHandler (
+func NewPencilBookingHandler(
 	bookingFactory entities.BookingFactory,
 	flightFactory entities.FlightFactory) PencilBookingHandler {
 	return PencilBookingHandler{
 		bookingFactory: &bookingFactory,
-		flightFactory: &flightFactory,
+		flightFactory:  &flightFactory,
 	}
 }
 
@@ -34,7 +34,7 @@ func (e *BookingNotFoundError) Is(target error) bool {
 	return ok
 }
 
-type SeatsUnavailableError struct {}
+type SeatsUnavailableError struct{}
 
 func (e *SeatsUnavailableError) Error() string {
 	return "seat(s) no longer available"
@@ -47,7 +47,7 @@ func (e *SeatsUnavailableError) Is(target error) bool {
 
 type CreatePencilBookingDto struct {
 	RequiredNumberOfSeats int
-	OutboundJourneyLegs []uuid.UUID
+	OutboundJourneyLegs   []uuid.UUID
 }
 
 func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dto CreatePencilBookingDto) (uuid.UUID, error) {
@@ -75,7 +75,7 @@ func (handler *PencilBookingHandler) CreatePencilBooking(ctx context.Context, dt
 }
 
 type SetInboundJourneyDto struct {
-	BookingID uuid.UUID
+	BookingID          uuid.UUID
 	InboundJourneyLegs []uuid.UUID
 }
 
@@ -107,31 +107,30 @@ func (handler *PencilBookingHandler) SetInboundJourney(ctx context.Context, dto 
 }
 
 func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *entities.Journey, proposedLegs []uuid.UUID) (bool, error) {
-		for _, proposedLeg := range proposedLegs {
-			flight := handler.flightFactory.NewFlight(proposedLeg)
-			seatsObtained, err := flight.TryBookSeats(ctx, journey)
-			if !seatsObtained || err != nil {
-				// NB: The release of the already-allocated seats could fail, but nothing 
-				// can be done about it within this scope. The application will make its best 
-				// effort to avoid leaving orphan seat locks, but a background service will need 
-				// to clean up any stale bookings and release the seats that were locked and could 
-				// not be released by this sync workflow. With this in mind, this workflow treats 
-				// the release as a fire-and-forget, hence we are not awaiting any result object.
+	for _, proposedLeg := range proposedLegs {
+		flight := handler.flightFactory.NewFlight(proposedLeg)
+		seatsObtained, err := flight.TryBookSeats(ctx, journey)
+		if !seatsObtained || err != nil {
+			// NB: The release of the already-allocated seats could fail, but nothing
+			// can be done about it within this scope. The application will make its best
+			// effort to avoid leaving orphan seat locks, but a background service will need
+			// to clean up any stale bookings and release the seats that were locked and could
+			// not be released by this sync workflow. With this in mind, this workflow treats
+			// the release as a fire-and-forget, hence we are not awaiting any result object.
 
-				// (This workflow being able to lock a seat but unable to subsequently release the 
-				// lock is a one-in-a-million edge-case)
-				journey.ReleaseAllSeats(ctx)	
-			}
-			
-			if err != nil {
-				return false, err
-			}
-
-			if !seatsObtained {
-				return true, nil
-			}
+			// (This workflow being able to lock a seat but unable to subsequently release the
+			// lock is a one-in-a-million edge-case)
+			journey.ReleaseAllSeats(ctx)
 		}
 
-		return false, nil
-}
+		if err != nil {
+			return false, err
+		}
 
+		if !seatsObtained {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

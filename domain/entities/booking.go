@@ -3,17 +3,17 @@ package entities
 import (
 	"context"
 	"errors"
-	"log"
 	"github.com/google/uuid"
+	"log"
 )
 
 type BookingFactory struct {
 	bookingRepository BookingRepository
-	flightFactory *FlightFactory
+	flightFactory     *FlightFactory
 }
 
 func NewBookingFactory(bookingRepository BookingRepository, flightFactory FlightFactory) BookingFactory {
-	factory := BookingFactory{ bookingRepository: bookingRepository, flightFactory: &flightFactory }
+	factory := BookingFactory{bookingRepository: bookingRepository, flightFactory: &flightFactory}
 	return factory
 }
 
@@ -66,10 +66,10 @@ func (factory BookingFactory) ExistingBooking(ctx context.Context, ID uuid.UUID)
 }
 
 type BookingChanges struct {
-	ID uuid.UUID
+	ID                 uuid.UUID
 	NumberOfPassengers int
-	InboundLegs []JourneyLeg
-	OutboundLegs []JourneyLeg
+	InboundLegs        []JourneyLeg
+	OutboundLegs       []JourneyLeg
 }
 
 type InitializeBookingDto struct {
@@ -77,7 +77,7 @@ type InitializeBookingDto struct {
 }
 
 type ValidateBookingResult struct {
-	BookingExists bool
+	BookingExists      bool
 	NumberOfPassengers int
 }
 
@@ -94,25 +94,25 @@ type BookingRepository interface {
 }
 
 type JourneyLeg struct {
-	FlightID uuid.UUID
+	FlightID    uuid.UUID
 	SeatLockIDs []int
 }
 
 type Journey struct {
-	Parent *Booking
-	legs []JourneyLeg
+	Parent           *Booking
+	legs             []JourneyLeg
 	isInboundJourney bool
-	modified bool
+	modified         bool
 }
 
 type Booking struct {
 	bookingRepository BookingRepository
-	flightFactory *FlightFactory
+	flightFactory     *FlightFactory
 
-	ID uuid.UUID
+	ID                 uuid.UUID
 	numberOfPassengers int
-	Outbound Journey
-	Inbound Journey
+	Outbound           Journey
+	Inbound            Journey
 }
 
 func (journey *Journey) ReleaseAllSeats(ctx context.Context) {
@@ -133,20 +133,20 @@ func (journey *Journey) AllocateSeats(ctx context.Context, flight Flight, seatLo
 		journey.isInboundJourney,
 		flight.ID,
 		seatLockIDs)
-	
+
 	if err != nil {
 		return err
 	}
 
-	journey.legs = append(journey.legs, JourneyLeg{ FlightID: flight.ID, SeatLockIDs: seatLockIDs })
+	journey.legs = append(journey.legs, JourneyLeg{FlightID: flight.ID, SeatLockIDs: seatLockIDs})
 	journey.modified = true
 
 	return nil
 }
 
-func (booking *Booking) FinalizeChanges (ctx context.Context) error {
-	stagedChanges := BookingChanges {
-		ID: booking.ID,
+func (booking *Booking) FinalizeChanges(ctx context.Context) error {
+	stagedChanges := BookingChanges{
+		ID:                 booking.ID,
 		NumberOfPassengers: booking.numberOfPassengers,
 	}
 
@@ -157,8 +157,8 @@ func (booking *Booking) FinalizeChanges (ctx context.Context) error {
 	if booking.Outbound.modified {
 		stagedChanges.OutboundLegs = booking.Outbound.legs
 	}
-	
-	err := booking.bookingRepository.OnChangesCompleted(ctx, stagedChanges);
+
+	err := booking.bookingRepository.OnChangesCompleted(ctx, stagedChanges)
 
 	if err != nil {
 		return err

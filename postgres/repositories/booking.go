@@ -4,6 +4,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ func NewBookingRepository(db *pgxpool.Pool) BookingRepository {
 }
 
 func (bookingRepository BookingRepository) InitializeBooking(
-	ctx context.Context, 
+	ctx context.Context,
 	dto entities.InitializeBookingDto,
 ) (uuid.UUID, error) {
 	command := `
@@ -44,7 +45,7 @@ func (bookingRepository BookingRepository) InitializeBooking(
 }
 
 func (bookingRepository BookingRepository) ValidateBooking(
-	ctx context.Context, 
+	ctx context.Context,
 	ID uuid.UUID,
 ) (entities.ValidateBookingResult, error) {
 	var numberOfPassengers int
@@ -60,15 +61,15 @@ func (bookingRepository BookingRepository) ValidateBooking(
 	if err != nil {
 		return entities.ValidateBookingResult{}, err
 	}
-	
+
 	return entities.ValidateBookingResult{
-		BookingExists: true,
+		BookingExists:      true,
 		NumberOfPassengers: numberOfPassengers,
 	}, nil
 }
 
 func (bookingRepository BookingRepository) OnSeatsAllocated(
-	ctx context.Context, 
+	ctx context.Context,
 	bookingID uuid.UUID,
 	isInboundJourney bool,
 	flightID uuid.UUID,
@@ -76,9 +77,9 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 
 	convertedLockIDs := make([]int32, len(seatLockIDs))
 	for i, v := range seatLockIDs {
-			convertedLockIDs[i] = int32(v)
+		convertedLockIDs[i] = int32(v)
 	}
-	
+
 	allocationType := "outbound"
 	if isInboundJourney {
 		allocationType = "inbound"
@@ -94,7 +95,7 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 }
 
 func (bookingRepository BookingRepository) OnSeatsDeallocated(
-	ctx context.Context, 
+	ctx context.Context,
 	bookingID uuid.UUID,
 	isInboundJourney bool) {
 	// Fire-and-forget; failures unimportant
@@ -103,14 +104,16 @@ func (bookingRepository BookingRepository) OnSeatsDeallocated(
 		allocationType = "inbound"
 	}
 	command := "delete from dbo.booking_flight_allocation where booking_id = $1 and allocation_type = $2"
-	bookingRepository.db.Exec(ctx, command, bookingID, bookingID, allocationType)
+	_, err := bookingRepository.db.Exec(ctx, command, bookingID, bookingID, allocationType)
+	if err != nil {
+		log.Printf("Warning: failed to deallocate seats from booking %v %v journey. Err: %v", bookingID, allocationType, err)
+	}
 }
 
-func (bookingRepository BookingRepository)OnChangesCompleted(
-	ctx context.Context, 
+func (bookingRepository BookingRepository) OnChangesCompleted(
+	ctx context.Context,
 	changes entities.BookingChanges,
 ) error {
 	// Committing at the end for SQL DB implementation rendered unnecessary by incremental writing
 	return nil
 }
-
