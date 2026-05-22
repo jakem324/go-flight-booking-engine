@@ -28,7 +28,7 @@ func Run() {
 		OutboundJourneyLegs []uuid.UUID `json:"outboundJourneyLegs" binding:"required"`
 	}
 
-	router.POST("/user", func(c *gin.Context) {
+	router.POST("/booking", func(c *gin.Context) {
 		var json CreatePencilBookingRequest
 
 		// Bind incoming JSON to the struct
