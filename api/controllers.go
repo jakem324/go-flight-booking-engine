@@ -17,6 +17,7 @@ import (
 func Run() {
 	ctx := context.Background()
 	handlers, dbpool := setup(ctx)
+	defer dbpool.Close()
 
 	router := gin.Default()
 	router.GET("/ping", func(c *gin.Context) {
@@ -65,6 +66,4 @@ func Run() {
 	})
 
 	router.Run("localhost:8080")
-
-	defer dbpool.Close()
 }
