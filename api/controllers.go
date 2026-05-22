@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func main() {
+func Run() {
 	ctx := context.Background()
 	handlers := setup(ctx)
 
