@@ -26,7 +26,7 @@ func Run() {
 		OutboundJourneyLegs   []uuid.UUID `json:"outboundJourneyLegs" binding:"required"`
 	}
 
-	router.POST("/booking", WithJSONBody(func(c *gin.Context, body CreatePencilBookingRequest) {
+	router.POST("/booking", withJSONBody(func(c *gin.Context, body CreatePencilBookingRequest) {
 		createdBookingID, err := handlers.PencilBookingHandler.CreatePencilBooking(c, commands.CreatePencilBookingDto{
 			RequiredNumberOfSeats: body.RequiredNumberOfSeats,
 			OutboundJourneyLegs:   body.OutboundJourneyLegs,
@@ -42,8 +42,7 @@ func Run() {
 			c.String(http.StatusBadRequest, "flight(s) not recognised")
 			return
 		} else if err != nil {
-			log.Fatalf("Handler error: %v\n", err)
-			c.Status(http.StatusInternalServerError)
+			genericErrorResponse(c, err)
 			return
 		}
 

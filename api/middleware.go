@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -8,7 +9,7 @@ import (
 
 type TypedHandler[T any] func(c *gin.Context, body T)
 
-func WithJSONBody[T any](handler TypedHandler[T]) gin.HandlerFunc {
+func withJSONBody[T any](handler TypedHandler[T]) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req T
 
@@ -19,4 +20,9 @@ func WithJSONBody[T any](handler TypedHandler[T]) gin.HandlerFunc {
 
 		handler(c, req)
 	}
+}
+
+func genericErrorResponse(ctx *gin.Context, err error) {
+	log.Fatalf("Handler error: %v\n", err)
+	ctx.Status(http.StatusInternalServerError)
 }
