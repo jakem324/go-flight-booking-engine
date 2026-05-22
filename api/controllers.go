@@ -4,6 +4,8 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"net/http"
 
 	"booking.engine/domain/commands"
@@ -13,7 +15,7 @@ import (
 
 func Run() {
 	ctx := context.Background()
-	handlers := setup(ctx)
+	handlers, dbpool := setup(ctx)
 
 	router := gin.Default()
 	router.GET("/ping", func(c *gin.Context) {
@@ -48,6 +50,7 @@ func Run() {
 			c.Status(http.StatusConflict)	
 			return
 		} else if err != nil {
+			fmt.Fprintf(os.Stderr, "Handler error: %v\n", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
@@ -56,4 +59,6 @@ func Run() {
 	})
 
 	router.Run("localhost:8080")
+
+	defer dbpool.Close()
 }

@@ -3,6 +3,8 @@ package repositories
 
 import (
 	"context"
+	"fmt"
+
 	"booking.engine/domain/entities"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -27,13 +29,17 @@ func (bookingRepository BookingRepository) InitializeBooking(
 		returning id`
 	var result string
 	err := bookingRepository.db.QueryRow(ctx, command, dto.NumberOfPassengers).Scan(&result)
-	createdBookingID, parseErr := uuid.Parse(result)
-	if parseErr != nil {
-		return uuid.Nil, parseErr
-	}
 	if err != nil {
+		fmt.Printf("P2 generic DB err: %v", err)
 		return uuid.Nil, err
 	}
+
+	createdBookingID, parseErr := uuid.Parse(result)
+	if parseErr != nil {
+		fmt.Printf("P1 UUID parse err: %v; payload: %v", result, dto)
+		return uuid.Nil, parseErr
+	}
+
 	return createdBookingID, nil
 }
 
@@ -67,6 +73,12 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 	isInboundJourney bool,
 	flightID uuid.UUID,
 	seatLockIDs []int) error {
+
+	convertedLockIDs := make([]int32, len(seatLockIDs))
+	for i, v := range seatLockIDs {
+			convertedLockIDs[i] = int32(v)
+	}
+	
 	allocationType := "outbound"
 	if isInboundJourney {
 		allocationType = "inbound"
@@ -77,7 +89,7 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 		select $1, $2, unnest($3::int[]);
 	`
 
-	_, err := bookingRepository.db.Exec(ctx, command, bookingID, allocationType, seatLockIDs)
+	_, err := bookingRepository.db.Exec(ctx, command, bookingID, allocationType, convertedLockIDs)
 	return err
 }
 

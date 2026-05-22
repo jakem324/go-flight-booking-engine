@@ -19,7 +19,7 @@ type Handlers struct {
 	PencilBookingHandler commands.PencilBookingHandler
 }
 
-func setup(ctx context.Context) Handlers {
+func setup(ctx context.Context) (Handlers, *pgxpool.Pool) {
 	connString := "postgresql://postgres:password@localhost:5432/booking_engine"
 	err := migrateDB(connString)
 	if err != nil {
@@ -33,8 +33,6 @@ func setup(ctx context.Context) Handlers {
 		os.Exit(1)
 	}
 
-	defer dbpool.Close()
-
 	flightRepository := repositories.NewFlightRepository(dbpool)
 	bookingRepository := repositories.NewBookingRepository(dbpool)
 
@@ -44,7 +42,7 @@ func setup(ctx context.Context) Handlers {
 	pencilBookingHandler := commands.NewPencilBookingHandler(bookingFactory, flightFactory)
 	return Handlers{
 		PencilBookingHandler: pencilBookingHandler,
-	}
+	}, dbpool
 }
 
 func migrateDB(connString string) error {	

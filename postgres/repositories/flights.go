@@ -42,7 +42,11 @@ func (flightRepository FlightRepository) ReleaseSeats(
 	seatLockIDs []int,
 ) {
 	// Fire-and-forget; failures unimportant
-	command := "delete from dbo.seat_lock where flight_id=$1 id = ANY($2)"
-	flightRepository.db.Exec(ctx, command, flightID, seatLockIDs)
+	convertedLockIDs := make([]int32, len(seatLockIDs))
+	for i, v := range seatLockIDs {
+			convertedLockIDs[i] = int32(v)
+	}
+	command := "delete from dbo.seat_lock where flight_id=$1 and id = ANY($2)"
+	flightRepository.db.Exec(ctx, command, flightID, convertedLockIDs)
 }
 
