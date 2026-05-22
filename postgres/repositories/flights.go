@@ -9,6 +9,10 @@ type FlightRepository struct {
 	db *pgxpool.Pool
 }
 
+func NewFlightRepository(db *pgxpool.Pool) FlightRepository {
+	return FlightRepository{db: db}
+}
+
 func (flightRepository FlightRepository) LockSeats(
 	ctx context.Context, 
 	flightID uuid.UUID,

@@ -13,6 +13,10 @@ type BookingRepository struct {
 	db *pgxpool.Pool
 }
 
+func NewBookingRepository(db *pgxpool.Pool) BookingRepository {
+	return BookingRepository{db: db}
+}
+
 func (bookingRepository BookingRepository) InitializeBooking(
 	ctx context.Context, 
 	dto entities.InitializeBookingDto,
