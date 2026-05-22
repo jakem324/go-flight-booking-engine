@@ -3,8 +3,7 @@ package api
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"os"
+	"log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -25,14 +24,12 @@ func setup(ctx context.Context) (Handlers, *pgxpool.Pool) {
 	connString := "postgresql://postgres:password@localhost:5432/booking_engine"
 	err := migrateDB(connString)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to migrate DB: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to migrate DB: %v\n", err)
 	}
 
 	dbpool, err := pgxpool.New(ctx, connString)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}
 
 	flightRepository := repositories.NewFlightRepository(dbpool)

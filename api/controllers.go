@@ -4,10 +4,8 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -59,7 +57,7 @@ func Run() {
 			c.Status(http.StatusBadRequest)
 			return
 		} else if err != nil {
-			fmt.Fprintf(os.Stderr, "Handler error: %v\n", err)
+			log.Fatalf("Handler error: %v\n", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
