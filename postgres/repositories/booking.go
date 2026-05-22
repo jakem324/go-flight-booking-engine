@@ -3,7 +3,6 @@ package repositories
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -32,13 +31,11 @@ func (bookingRepository BookingRepository) InitializeBooking(
 	var result string
 	err := bookingRepository.db.QueryRow(ctx, command, dto.NumberOfPassengers).Scan(&result)
 	if err != nil {
-		fmt.Printf("P2 generic DB err: %v", err)
 		return uuid.Nil, err
 	}
 
 	createdBookingID, parseErr := uuid.Parse(result)
 	if parseErr != nil {
-		fmt.Printf("P1 UUID parse err: %v; payload: %v", result, dto)
 		return uuid.Nil, parseErr
 	}
 

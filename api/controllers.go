@@ -20,12 +20,6 @@ func Run() {
 	defer dbpool.Close()
 
 	router := gin.Default()
-	router.GET("/ping", func(c *gin.Context) {
-		// Return JSON response
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
 
 	type CreatePencilBookingRequest struct {
 		RequiredNumberOfSeats int         `json:"requiredNumberOfSeats" binding:"required"`
