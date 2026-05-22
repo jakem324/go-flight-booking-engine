@@ -45,10 +45,10 @@ func Run() {
 		var unknownFlightError *entities.FlightIDNotFoundError
 
 		if errors.As(err, &seatsUnavailableError) {
-			c.Status(http.StatusConflict)
+			c.String(http.StatusConflict, "seat(s) no longer available")
 			return
 		} else if errors.As(err, &unknownFlightError) {
-			c.Status(http.StatusBadRequest)
+			c.String(http.StatusBadRequest, "flight(s) not recognised")
 			return
 		} else if err != nil {
 			log.Fatalf("Handler error: %v\n", err)
