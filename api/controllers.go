@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 
 	"booking.engine/domain/commands"
+	"booking.engine/domain/entities"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -46,8 +47,13 @@ func Run() {
 		})
 
 		var seatsUnavailableError *commands.SeatsUnavailableError
+		var unknownFlightError *entities.FlightIDNotFoundError
+
 		if errors.As(err, &seatsUnavailableError) {
 			c.Status(http.StatusConflict)	
+			return
+		} else if errors.As(err, &unknownFlightError) {
+			c.Status(http.StatusBadRequest)	
 			return
 		} else if err != nil {
 			fmt.Fprintf(os.Stderr, "Handler error: %v\n", err)
