@@ -1,4 +1,4 @@
-// Package API defines app entry point
+// Package api defines app entry point
 package api
 
 import (
