@@ -2,7 +2,6 @@ package entities
 
 import (
 	"context"
-	"errors"
 	"log"
 
 	"github.com/google/uuid"
@@ -18,44 +17,35 @@ func NewBookingFactory(bookingRepository BookingRepository, flightFactory Flight
 	return factory
 }
 
-func (factory BookingFactory) NewBooking(ctx context.Context, numberOfPassengers int) (Booking, error) {
-	if numberOfPassengers < 1 {
-		return Booking{}, errors.New("invalid number of passengers")
-	}
-	booking := Booking{}
-	booking.bookingRepository = factory.bookingRepository
-	booking.flightFactory = factory.flightFactory
-	id, err := booking.bookingRepository.InitializeBooking(ctx, InitializeBookingDto{
+func (factory BookingFactory) NewBooking(ctx context.Context, numberOfPassengers int) (*Booking, error) {
+	id, err := factory.bookingRepository.InitializeBooking(ctx, InitializeBookingDto{
 		NumberOfPassengers: numberOfPassengers,
 	})
 
 	if err != nil {
-		return Booking{}, err
+		return &Booking{}, err
 	}
 
-	booking.ID = id
-	booking.numberOfPassengers = numberOfPassengers
-	booking.Outbound = Journey{
-		Parent: &booking,
-	}
-	booking.Inbound = Journey{
-		Parent: &booking,
-	}
-	booking.Inbound.isInboundJourney = true
-	return booking, nil
+	booking, err := factory.constructBooking(id, numberOfPassengers)
+	return booking, err
 }
 
 func (factory BookingFactory) ExistingBooking(ctx context.Context, ID uuid.UUID) (*Booking, error) {
-	booking := Booking{}
-	booking.bookingRepository = factory.bookingRepository
-	booking.flightFactory = factory.flightFactory
-	result, err := booking.bookingRepository.ValidateBooking(ctx, ID)
+	result, err := factory.bookingRepository.ValidateBooking(ctx, ID)
 	if !result.BookingExists || err != nil {
 		return nil, err
 	}
 
+	booking, err := factory.constructBooking(ID, result.NumberOfPassengers)
+	return booking, err
+}
+
+func (factory BookingFactory) constructBooking(ID uuid.UUID, numberOfPassengers int) (*Booking, error) {
+	booking := Booking{}
+	booking.bookingRepository = factory.bookingRepository
+	booking.flightFactory = factory.flightFactory
 	booking.ID = ID
-	booking.numberOfPassengers = result.NumberOfPassengers
+	booking.numberOfPassengers = numberOfPassengers
 	booking.Outbound = Journey{
 		Parent: &booking,
 	}
