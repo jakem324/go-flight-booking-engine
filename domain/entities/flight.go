@@ -6,30 +6,21 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
+	"booking.engine/domain/contracts"
 )
 
 type FlightFactory struct {
-	flightRepository FlightRepository
+	flightRepository contracts.FlightRepository
 }
 
-func NewFlightFactory(flightRepository FlightRepository) FlightFactory {
+func NewFlightFactory(flightRepository contracts.FlightRepository) FlightFactory {
 	factory := FlightFactory{flightRepository: flightRepository}
 	return factory
 }
 
-type SeatLockResult struct {
-	ValidFlightID       bool
-	SeatsAvailable      bool
-	ObtainedSeatLockIDs []int
-}
-
-type FlightRepository interface {
-	LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (SeatLockResult, error)
-	ReleaseSeats(ctx context.Context, flightID uuid.UUID, seatLockIDs []int)
-}
-
 type Flight struct {
-	flightRespository FlightRepository
+	flightRespository contracts.FlightRepository
 
 	ID uuid.UUID
 }

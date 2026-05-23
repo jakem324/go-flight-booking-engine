@@ -5,20 +5,22 @@ import (
 	"log"
 
 	"github.com/google/uuid"
+
+	"booking.engine/domain/contracts"
 )
 
 type BookingFactory struct {
-	bookingRepository BookingRepository
+	bookingRepository contracts.BookingRepository
 	flightFactory     *FlightFactory
 }
 
-func NewBookingFactory(bookingRepository BookingRepository, flightFactory FlightFactory) BookingFactory {
+func NewBookingFactory(bookingRepository contracts.BookingRepository, flightFactory FlightFactory) BookingFactory {
 	factory := BookingFactory{bookingRepository: bookingRepository, flightFactory: &flightFactory}
 	return factory
 }
 
 func (factory BookingFactory) NewBooking(ctx context.Context, numberOfPassengers int) (*Booking, error) {
-	id, err := factory.bookingRepository.InitializeBooking(ctx, InitializeBookingDto{
+	id, err := factory.bookingRepository.InitializeBooking(ctx, contracts.InitializeBookingDto{
 		NumberOfPassengers: numberOfPassengers,
 	})
 
@@ -56,48 +58,15 @@ func (factory BookingFactory) constructBooking(ID uuid.UUID, numberOfPassengers 
 	return &booking, nil
 }
 
-type BookingChanges struct {
-	ID                 uuid.UUID
-	NumberOfPassengers int
-	InboundLegs        []JourneyLeg
-	OutboundLegs       []JourneyLeg
-}
-
-type InitializeBookingDto struct {
-	NumberOfPassengers int
-}
-
-type ValidateBookingResult struct {
-	BookingExists      bool
-	NumberOfPassengers int
-}
-
-type BookingRepository interface {
-	InitializeBooking(ctx context.Context, dto InitializeBookingDto) (uuid.UUID, error)
-	ValidateBooking(ctx context.Context, ID uuid.UUID) (ValidateBookingResult, error)
-	// "Event" language intentional: the implemented repository can choose to either write incrementally
-	// using these events, or wait until OnChangesCompleted to write the whole aggregate once at the end.
-	// The entity does not care which option is leveraged; it is simply letting the repository know when
-	// these state changes are being made. This keeps the entity agnostic of the architectural requirements.
-	OnSeatsAllocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool, flightID uuid.UUID, seatLockIDs []int) error
-	OnSeatsDeallocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool)
-	OnChangesCompleted(ctx context.Context, changes BookingChanges) error
-}
-
-type JourneyLeg struct {
-	FlightID    uuid.UUID
-	SeatLockIDs []int
-}
-
 type Journey struct {
 	Parent           *Booking
-	legs             []JourneyLeg
+	legs             []contracts.JourneyLeg
 	isInboundJourney bool
 	modified         bool
 }
 
 type Booking struct {
-	bookingRepository BookingRepository
+	bookingRepository contracts.BookingRepository
 	flightFactory     *FlightFactory
 
 	ID                 uuid.UUID
@@ -129,14 +98,14 @@ func (journey *Journey) AllocateSeats(ctx context.Context, flight Flight, seatLo
 		return err
 	}
 
-	journey.legs = append(journey.legs, JourneyLeg{FlightID: flight.ID, SeatLockIDs: seatLockIDs})
+	journey.legs = append(journey.legs, contracts.JourneyLeg{FlightID: flight.ID, SeatLockIDs: seatLockIDs})
 	journey.modified = true
 
 	return nil
 }
 
 func (booking *Booking) FinalizeChanges(ctx context.Context) error {
-	stagedChanges := BookingChanges{
+	stagedChanges := contracts.BookingChanges{
 		ID:                 booking.ID,
 		NumberOfPassengers: booking.numberOfPassengers,
 	}

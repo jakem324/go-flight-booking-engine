@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"booking.engine/domain/entities"
+	"booking.engine/domain/contracts"
 )
 
 /*
@@ -38,12 +38,12 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 
 	fixture.bookingRepositoryMock.On("InitializeBooking", mock.Anything).Return(bookingID, nil)
 	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		firstFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
@@ -51,7 +51,7 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 		"LockSeats",
 		secondFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{293, 572, 904}}, nil)
@@ -63,14 +63,14 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	result, err := fixture.handler.CreatePencilBooking(ctx, dto)
 
 	// Assert
-	expectedInitializationDto := entities.InitializeBookingDto{
+	expectedInitializationDto := contracts.InitializeBookingDto{
 		NumberOfPassengers: passengers,
 	}
 
-	expectedChangesDto := entities.BookingChanges{
+	expectedChangesDto := contracts.BookingChanges{
 		ID:                 bookingID,
 		NumberOfPassengers: passengers,
-		OutboundLegs: []entities.JourneyLeg{
+		OutboundLegs: []contracts.JourneyLeg{
 			{
 				FlightID:    firstFlightID,
 				SeatLockIDs: []int{472, 673, 839},
@@ -122,12 +122,12 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 
 	fixture.bookingRepositoryMock.On("InitializeBooking", mock.Anything).Return(bookingID, nil)
 	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		firstFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
@@ -135,7 +135,7 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 		"LockSeats",
 		secondFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{582, 612, 783}}, nil)
@@ -143,7 +143,7 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 		"LockSeats",
 		thirdFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:  true,
 		SeatsAvailable: false,
 	}, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
@@ -156,7 +156,7 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	_, err := fixture.handler.CreatePencilBooking(ctx, dto)
 
 	// Assert
-	expectedInitializationDto := entities.InitializeBookingDto{
+	expectedInitializationDto := contracts.InitializeBookingDto{
 		NumberOfPassengers: passengers,
 	}
 
@@ -199,7 +199,7 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	}
 
 	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		entities.ValidateBookingResult{
+		contracts.ValidateBookingResult{
 			BookingExists:      true,
 			NumberOfPassengers: passengers,
 		}, nil)
@@ -207,7 +207,7 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 		"LockSeats",
 		firstFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
@@ -215,7 +215,7 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 		"LockSeats",
 		secondFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{293, 572, 904}}, nil)
@@ -227,10 +227,10 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	err := fixture.handler.SetInboundJourney(ctx, dto)
 
 	// Assert
-	expectedChangesDto := entities.BookingChanges{
+	expectedChangesDto := contracts.BookingChanges{
 		ID:                 bookingID,
 		NumberOfPassengers: passengers,
-		InboundLegs: []entities.JourneyLeg{
+		InboundLegs: []contracts.JourneyLeg{
 			{
 				FlightID:    firstFlightID,
 				SeatLockIDs: []int{472, 673, 839},
@@ -261,7 +261,7 @@ func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 	// Arrange
 	fixture := CreateFixture()
 	fixture.bookingRepositoryMock.On("ValidateBooking", mock.Anything).Return(
-		entities.ValidateBookingResult{
+		contracts.ValidateBookingResult{
 			BookingExists:      false,
 			NumberOfPassengers: 0,
 		}, nil)
@@ -310,17 +310,17 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	}
 
 	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		entities.ValidateBookingResult{
+		contracts.ValidateBookingResult{
 			BookingExists:      true,
 			NumberOfPassengers: passengers,
 		}, nil)
 	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		entities.ValidateBookingResult{NumberOfPassengers: 5}, nil)
+		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
 	fixture.flightRepositoryMock.On(
 		"LockSeats",
 		firstFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
@@ -328,7 +328,7 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 		"LockSeats",
 		secondFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      true,
 		ObtainedSeatLockIDs: []int{582, 612, 783}}, nil)
@@ -336,7 +336,7 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 		"LockSeats",
 		thirdFlightID,
 		passengers,
-	).Return(entities.SeatLockResult{
+	).Return(contracts.SeatLockResult{
 		ValidFlightID:       true,
 		SeatsAvailable:      false,
 		ObtainedSeatLockIDs: nil,

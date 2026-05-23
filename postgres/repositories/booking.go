@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"booking.engine/domain/entities"
+	"booking.engine/domain/contracts"
 )
 
 type BookingRepository struct {
@@ -22,7 +22,7 @@ func NewBookingRepository(db *pgxpool.Pool) BookingRepository {
 
 func (bookingRepository BookingRepository) InitializeBooking(
 	ctx context.Context,
-	dto entities.InitializeBookingDto,
+	dto contracts.InitializeBookingDto,
 ) (uuid.UUID, error) {
 	command := `
 		insert into dbo.booking (number_of_passengers)
@@ -45,22 +45,22 @@ func (bookingRepository BookingRepository) InitializeBooking(
 func (bookingRepository BookingRepository) ValidateBooking(
 	ctx context.Context,
 	ID uuid.UUID,
-) (entities.ValidateBookingResult, error) {
+) (contracts.ValidateBookingResult, error) {
 	var numberOfPassengers int
 	err := bookingRepository.db.QueryRow(
 		ctx,
 		"select number_of_passengers from dbo.booking where id=$1",
 		ID).Scan(&numberOfPassengers)
 	if err == pgx.ErrNoRows {
-		return entities.ValidateBookingResult{
+		return contracts.ValidateBookingResult{
 			BookingExists: false,
 		}, nil
 	}
 	if err != nil {
-		return entities.ValidateBookingResult{}, err
+		return contracts.ValidateBookingResult{}, err
 	}
 
-	return entities.ValidateBookingResult{
+	return contracts.ValidateBookingResult{
 		BookingExists:      true,
 		NumberOfPassengers: numberOfPassengers,
 	}, nil
@@ -110,7 +110,7 @@ func (bookingRepository BookingRepository) OnSeatsDeallocated(
 
 func (bookingRepository BookingRepository) OnChangesCompleted(
 	ctx context.Context,
-	changes entities.BookingChanges,
+	changes contracts.BookingChanges,
 ) error {
 	// Committing at the end for SQL DB implementation rendered unnecessary by incremental writing
 	return nil

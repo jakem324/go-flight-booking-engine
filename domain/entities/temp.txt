@@ -1,0 +1,6 @@
+/*
+Package repositories contains the repository interfaces to be used by the domain entities.
+This is distinctly separate from the repository implementations found in the other package(s).
+*/
+
+

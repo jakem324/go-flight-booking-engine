@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"booking.engine/domain/entities"
+	"booking.engine/domain/contracts"
 )
 
 type FlightRepository struct {
@@ -22,7 +22,7 @@ func (flightRepository FlightRepository) LockSeats(
 	ctx context.Context,
 	flightID uuid.UUID,
 	numberOfSeats int,
-) (entities.SeatLockResult, error) {
+) (contracts.SeatLockResult, error) {
 	var flightValid bool
 	var seatsAvailable bool
 	var seatLockIDs []int32
@@ -31,7 +31,7 @@ func (flightRepository FlightRepository) LockSeats(
 		&flightValid, &seatsAvailable, &seatLockIDs)
 
 	if err != nil {
-		return entities.SeatLockResult{}, err
+		return contracts.SeatLockResult{}, err
 	}
 
 	convertedLockIDs := make([]int, len(seatLockIDs))
@@ -39,7 +39,7 @@ func (flightRepository FlightRepository) LockSeats(
 		convertedLockIDs[i] = int(v)
 	}
 
-	return entities.SeatLockResult{
+	return contracts.SeatLockResult{
 		ValidFlightID:       flightValid,
 		SeatsAvailable:      seatsAvailable,
 		ObtainedSeatLockIDs: convertedLockIDs,

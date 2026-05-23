@@ -6,22 +6,23 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
+	"booking.engine/domain/contracts"
 	"booking.engine/domain/entities"
 )
 
 type BookingRepositoryMock struct {
 	mock.Mock
-	entities.BookingRepository
+	contracts.BookingRepository
 }
 
-func (m *BookingRepositoryMock) InitializeBooking(ctx context.Context, dto entities.InitializeBookingDto) (uuid.UUID, error) {
+func (m *BookingRepositoryMock) InitializeBooking(ctx context.Context, dto contracts.InitializeBookingDto) (uuid.UUID, error) {
 	args := m.Called(dto)
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
-func (m *BookingRepositoryMock) ValidateBooking(ctx context.Context, ID uuid.UUID) (entities.ValidateBookingResult, error) {
+func (m *BookingRepositoryMock) ValidateBooking(ctx context.Context, ID uuid.UUID) (contracts.ValidateBookingResult, error) {
 	args := m.Called(ID)
-	return args.Get(0).(entities.ValidateBookingResult), args.Error(1)
+	return args.Get(0).(contracts.ValidateBookingResult), args.Error(1)
 }
 
 func (m *BookingRepositoryMock) OnSeatsAllocated(
@@ -39,21 +40,21 @@ func (m *BookingRepositoryMock) OnSeatsDeallocated(ctx context.Context, bookingI
 	m.Called(bookingID, isInboundJourney)
 }
 
-func (m *BookingRepositoryMock) OnChangesCompleted(ctx context.Context, changes entities.BookingChanges) error {
+func (m *BookingRepositoryMock) OnChangesCompleted(ctx context.Context, changes contracts.BookingChanges) error {
 	args := m.Called(changes)
 	return args.Error(0)
 }
 
 type FlightRepositoryMock struct {
 	mock.Mock
-	entities.FlightRepository
+	contracts.FlightRepository
 }
 
-func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (entities.SeatLockResult, error) {
+func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (contracts.SeatLockResult, error) {
 	args := m.Called(flightID, numberOfSeats)
-	var result entities.SeatLockResult
+	var result contracts.SeatLockResult
 	if args.Get(0) != nil {
-		result = args.Get(0).(entities.SeatLockResult)
+		result = args.Get(0).(contracts.SeatLockResult)
 	}
 	return result, args.Error(1)
 }
