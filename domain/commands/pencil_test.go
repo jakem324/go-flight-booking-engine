@@ -1,13 +1,10 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	"booking.engine/domain/contracts"
 )
@@ -24,48 +21,12 @@ All happy-path assertions:
 */
 func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	// Arrange
-	fixture := CreateFixture()
+	fixture := CreateFixture(t)
 
 	bookingID := uuid.New()
 	passengers := 5
 	firstFlightID := uuid.New()
 	secondFlightID := uuid.New()
-
-	dto := CreatePencilBookingDto{
-		RequiredNumberOfSeats: passengers,
-		OutboundJourneyLegs:   []uuid.UUID{firstFlightID, secondFlightID},
-	}
-
-	fixture.bookingRepositoryMock.On("InitializeBooking", mock.Anything).Return(bookingID, nil)
-	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		firstFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		secondFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{293, 572, 904}}, nil)
-	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
-	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
-
-	// Act
-	ctx := context.Background()
-	result, err := fixture.handler.CreatePencilBooking(ctx, dto)
-
-	// Assert
-	expectedInitializationDto := contracts.InitializeBookingDto{
-		NumberOfPassengers: passengers,
-	}
 
 	expectedChangesDto := contracts.BookingChanges{
 		ID:                 bookingID,
@@ -82,15 +43,26 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 		},
 	}
 
-	if assert.Nil(t, err) {
-		fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
-		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
-		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int{472, 673, 839})
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, secondFlightID, []int{293, 572, 904})
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnChangesCompleted", expectedChangesDto)
-		assert.Equal(t, bookingID, result)
-	}
+	// Given
+	fixture.bookingRepositoryMock.GivenInitializeBookingMock(bookingID)
+	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 293, 572, 904)
+	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForOutboundJourney(bookingID)
+	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
+
+	// When
+	fixture.WhenCreatePencilBookingIsCalled(passengers, firstFlightID, secondFlightID)
+
+	// Then
+	fixture.HandlerShouldCompleteSuccessfully()
+	fixture.HandlerShouldReturnBookingID(bookingID)
+	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled(passengers)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, firstFlightID, 472, 673, 839)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, secondFlightID, 293, 572, 904)
+	fixture.bookingRepositoryMock.OnChangesCompletedShouldBeCalledWith(expectedChangesDto)
 }
 
 /*
@@ -107,7 +79,7 @@ All assertions:
 */
 func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	// Arrange
-	fixture := CreateFixture()
+	fixture := CreateFixture(t)
 
 	bookingID := uuid.New()
 	passengers := 5
@@ -115,64 +87,38 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	secondFlightID := uuid.New()
 	thirdFlightID := uuid.New()
 
-	dto := CreatePencilBookingDto{
-		RequiredNumberOfSeats: passengers,
-		OutboundJourneyLegs:   []uuid.UUID{firstFlightID, secondFlightID, thirdFlightID},
-	}
+	// Given
+	fixture.bookingRepositoryMock.GivenInitializeBookingMock(bookingID)
+	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 582, 612, 783)
+	fixture.flightRepositoryMock.GivenLockSeatsMockWithUnavailableResult(thirdFlightID, passengers)
+	// ^^ Will cause "seat(s) no longer available" result (returned error is nil yet no seat locks were returned)
+	fixture.flightRepositoryMock.GivenReleaseSeatsMock()
+	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForOutboundJourney(bookingID)
+	fixture.bookingRepositoryMock.GivenOnSeatsDeallocatedMockForOutboundJourney(bookingID)
+	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
 
-	fixture.bookingRepositoryMock.On("InitializeBooking", mock.Anything).Return(bookingID, nil)
-	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		firstFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		secondFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{582, 612, 783}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		thirdFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:  true,
-		SeatsAvailable: false,
-	}, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
-	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
-	fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
-	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, false).Return(nil)
+	// fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
 
-	// Act
-	ctx := context.Background()
-	_, err := fixture.handler.CreatePencilBooking(ctx, dto)
+	// When
+	fixture.WhenCreatePencilBookingIsCalled(passengers, firstFlightID, secondFlightID, thirdFlightID)
 
-	// Assert
-	expectedInitializationDto := contracts.InitializeBookingDto{
-		NumberOfPassengers: passengers,
-	}
-
-	fixture.bookingRepositoryMock.AssertCalled(t, "InitializeBooking", expectedInitializationDto)
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, firstFlightID, []int{472, 673, 839})
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, false, secondFlightID, []int{582, 612, 783})
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", thirdFlightID, passengers) // <-- availability failure here
+	// Then
+	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled(passengers)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, firstFlightID, 472, 673, 839)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, secondFlightID, 582, 612, 783)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(thirdFlightID, passengers) // <-- availability failure here
 	// Seats deallocated for entire journey (including previous two flights)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsDeallocated", bookingID, false)
+	fixture.bookingRepositoryMock.OnSeatsDeallocatedShouldBeCalledForOutboundJourney(bookingID)
 	// Successfully-locked seats from previous two flights now released
-	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", firstFlightID, []int{472, 673, 839})
-	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", secondFlightID, []int{582, 612, 783})
+	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
+	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)
 	// "seat(s) no longer available" returned as error
-	assert.Equal(t, "seat(s) no longer available", err.Error())
+	fixture.HandlerShouldReturnError("seat(s) no longer available")
+	fixture.bookingRepositoryMock.OnChangesCompletedShouldNotBeCalled()
 }
 
 /*
@@ -186,47 +132,12 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 
 func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	// Arrange
-	fixture := CreateFixture()
+	fixture := CreateFixture(t)
 
 	bookingID := uuid.New()
 	passengers := 5
 	firstFlightID := uuid.New()
 	secondFlightID := uuid.New()
-
-	dto := SetInboundJourneyDto{
-		BookingID:          bookingID,
-		InboundJourneyLegs: []uuid.UUID{firstFlightID, secondFlightID},
-	}
-
-	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		contracts.ValidateBookingResult{
-			BookingExists:      true,
-			NumberOfPassengers: passengers,
-		}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		firstFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		secondFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{293, 572, 904}}, nil)
-	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	fixture.bookingRepositoryMock.On("OnChangesCompleted", mock.Anything).Return(nil)
-
-	// Act
-	ctx := context.Background()
-	err := fixture.handler.SetInboundJourney(ctx, dto)
-
-	// Assert
 	expectedChangesDto := contracts.BookingChanges{
 		ID:                 bookingID,
 		NumberOfPassengers: passengers,
@@ -242,13 +153,23 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 		},
 	}
 
-	if assert.Nil(t, err) {
-		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
-		fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, true, firstFlightID, []int{472, 673, 839})
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, true, secondFlightID, []int{293, 572, 904})
-		fixture.bookingRepositoryMock.AssertCalled(t, "OnChangesCompleted", expectedChangesDto)
-	}
+	// Given
+	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 293, 572, 904)
+	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForInboundJourney(bookingID)
+	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
+
+	// When
+	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID)
+
+	// Then
+	fixture.HandlerShouldCompleteSuccessfully()
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, firstFlightID, 472, 673, 839)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, secondFlightID, 293, 572, 904)
+	fixture.bookingRepositoryMock.OnChangesCompletedShouldBeCalledWith(expectedChangesDto)
 }
 
 /*
@@ -259,28 +180,14 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 
 func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 	// Arrange
-	fixture := CreateFixture()
-	fixture.bookingRepositoryMock.On("ValidateBooking", mock.Anything).Return(
-		contracts.ValidateBookingResult{
-			BookingExists:      false,
-			NumberOfPassengers: 0,
-		}, nil)
-
+	fixture := CreateFixture(t)
 	bookingID := uuid.New()
 	firstFlightID := uuid.New()
 	secondFlightID := uuid.New()
-	dto := SetInboundJourneyDto{
-		BookingID:          bookingID,
-		InboundJourneyLegs: []uuid.UUID{firstFlightID, secondFlightID},
-	}
 
-	// Act
-	ctx := context.Background()
-	err := fixture.handler.SetInboundJourney(ctx, dto)
-
-	// Assert
-	expectedMessge := fmt.Sprintf("booking not found: %v", bookingID)
-	assert.Equal(t, expectedMessge, err.Error())
+	fixture.bookingRepositoryMock.GivenValidateBookingMockWithNegativeResult(bookingID)
+	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID)
+	fixture.HandlerShouldReturnError(fmt.Sprintf("booking not found: %v", bookingID))
 }
 
 /*
@@ -296,7 +203,7 @@ func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 
 func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	// Arrange
-	fixture := CreateFixture()
+	fixture := CreateFixture(t)
 
 	bookingID := uuid.New()
 	passengers := 5
@@ -304,62 +211,29 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	secondFlightID := uuid.New()
 	thirdFlightID := uuid.New()
 
-	dto := SetInboundJourneyDto{
-		BookingID:          bookingID,
-		InboundJourneyLegs: []uuid.UUID{firstFlightID, secondFlightID, thirdFlightID},
-	}
+	// Given
+	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
+	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 582, 612, 783)
+	fixture.flightRepositoryMock.GivenLockSeatsMockWithUnavailableResult(thirdFlightID, passengers)
+	// ^ Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
+	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForInboundJourney(bookingID)
+	fixture.flightRepositoryMock.GivenReleaseSeatsMock()
+	fixture.bookingRepositoryMock.GivenOnSeatsDeallocatedMockForInboundJourney(bookingID)
 
-	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		contracts.ValidateBookingResult{
-			BookingExists:      true,
-			NumberOfPassengers: passengers,
-		}, nil)
-	fixture.bookingRepositoryMock.On("ValidateBooking", bookingID).Return(
-		contracts.ValidateBookingResult{NumberOfPassengers: 5}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		firstFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{472, 673, 839}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		secondFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      true,
-		ObtainedSeatLockIDs: []int{582, 612, 783}}, nil)
-	fixture.flightRepositoryMock.On(
-		"LockSeats",
-		thirdFlightID,
-		passengers,
-	).Return(contracts.SeatLockResult{
-		ValidFlightID:       true,
-		SeatsAvailable:      false,
-		ObtainedSeatLockIDs: nil,
-	}, nil) // <-- Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
-	fixture.bookingRepositoryMock.On("OnSeatsAllocated", bookingID, mock.Anything, mock.Anything, mock.Anything).Return(nil)
-	fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
-	fixture.bookingRepositoryMock.On("OnSeatsDeallocated", bookingID, mock.Anything).Return(nil)
+	// When
+	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID, thirdFlightID)
 
-	// Act
-	ctx := context.Background()
-	err := fixture.handler.SetInboundJourney(ctx, dto)
-
-	// Assert
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", firstFlightID, passengers)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, true, firstFlightID, []int{472, 673, 839})
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", secondFlightID, passengers)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsAllocated", bookingID, true, secondFlightID, []int{582, 612, 783})
-	fixture.flightRepositoryMock.AssertCalled(t, "LockSeats", thirdFlightID, passengers) // <-- availability failure here
+	// Then
+	fixture.HandlerShouldReturnError("seat(s) no longer available")
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, firstFlightID, 472, 673, 839)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
+	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, secondFlightID, 582, 612, 783)
+	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(thirdFlightID, passengers) // <-- availability failure here
 	// Seats deallocated for entire journey (including previous two flights)
-	fixture.bookingRepositoryMock.AssertCalled(t, "OnSeatsDeallocated", bookingID, true)
+	fixture.bookingRepositoryMock.OnSeatsDeallocatedShouldBeCalledForInboundJourney(bookingID)
 	// Successfully-locked seats from previous two flights now released
-	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", firstFlightID, []int{472, 673, 839})
-	fixture.flightRepositoryMock.AssertCalled(t, "ReleaseSeats", secondFlightID, []int{582, 612, 783})
-	// "seat(s) no longer available" returned as error
-	assert.Equal(t, "seat(s) no longer available", err.Error())
+	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
+	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)
 }

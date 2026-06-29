@@ -2,8 +2,10 @@ package commands
 
 import (
 	"context"
+	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
 	"booking.engine/domain/contracts"
@@ -11,6 +13,7 @@ import (
 )
 
 type BookingRepositoryMock struct {
+	fixture *Fixture
 	mock.Mock
 	contracts.BookingRepository
 }
@@ -48,6 +51,7 @@ func (m *BookingRepositoryMock) OnChangesCompleted(ctx context.Context, changes 
 type FlightRepositoryMock struct {
 	mock.Mock
 	contracts.FlightRepository
+	fixture *Fixture
 }
 
 func (m *FlightRepositoryMock) LockSeats(ctx context.Context, flightID uuid.UUID, numberOfSeats int) (contracts.SeatLockResult, error) {
@@ -67,21 +71,171 @@ type Fixture struct {
 	bookingRepositoryMock *BookingRepositoryMock
 	flightRepositoryMock  *FlightRepositoryMock
 
-	handler PencilBookingHandler
+	t      *testing.T
+	result uuid.UUID
+	err    error
 }
 
-func CreateFixture() Fixture {
+func CreateFixture(t *testing.T) Fixture {
 	bookingRepositoryMock := new(BookingRepositoryMock)
 	flightRepositoryMock := new(FlightRepositoryMock)
-
-	flightFactory := entities.NewFlightFactory(flightRepositoryMock)
-	bookingFactory := entities.NewBookingFactory(bookingRepositoryMock, flightFactory)
-
-	handler := NewPencilBookingHandler(bookingFactory, flightFactory)
-
-	return Fixture{
+	fixture := Fixture{
 		bookingRepositoryMock: bookingRepositoryMock,
 		flightRepositoryMock:  flightRepositoryMock,
-		handler:               handler,
+		t:                     t,
 	}
+
+	fixture.bookingRepositoryMock.fixture = &fixture
+	fixture.flightRepositoryMock.fixture = &fixture
+	return fixture
 }
+
+// Helpers
+
+func (m *BookingRepositoryMock) GivenInitializeBookingMock(bookingID uuid.UUID) {
+	m.On("InitializeBooking", mock.Anything).Return(bookingID, nil)
+}
+
+func (m *BookingRepositoryMock) GivenValidateBookingMock(bookingID uuid.UUID, numberOfPassengers int) {
+	m.On("ValidateBooking", bookingID).Return(
+		contracts.ValidateBookingResult{
+			BookingExists: true,
+			NumberOfPassengers: numberOfPassengers,
+		}, nil)
+}
+
+func (m *BookingRepositoryMock) GivenValidateBookingMockWithNegativeResult(bookingID uuid.UUID) {
+	m.On("ValidateBooking", bookingID).Return(
+		contracts.ValidateBookingResult{
+			BookingExists:      false,
+			NumberOfPassengers: 0,
+		}, nil)
+}
+
+func (m *FlightRepositoryMock) GivenLockSeatsMock(flightID uuid.UUID, passengers int, returnSeatLockIDs ...int) {
+	m.On(
+		"LockSeats",
+		flightID,
+		passengers,
+	).Return(contracts.SeatLockResult{
+		ValidFlightID:       true,
+		SeatsAvailable:      true,
+		ObtainedSeatLockIDs: returnSeatLockIDs}, nil)
+}
+
+func (m *FlightRepositoryMock) GivenLockSeatsMockWithUnavailableResult(flightID uuid.UUID, passengers int, returnSeatLockIDs ...int) {
+	m.On(
+		"LockSeats",
+		flightID,
+		passengers,
+	).Return(contracts.SeatLockResult{
+		ValidFlightID:  true,
+		SeatsAvailable: false}, nil)
+}
+
+func (m *BookingRepositoryMock) GivenOnSeatsAllocatedMockForOutboundJourney(bookingID uuid.UUID) {
+	m.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
+}
+
+func (m *BookingRepositoryMock) GivenOnSeatsAllocatedMockForInboundJourney(bookingID uuid.UUID) {
+	m.On("OnSeatsAllocated", bookingID, true, mock.Anything, mock.Anything).Return(nil)
+}
+
+func (m *BookingRepositoryMock) GivenOnSeatsDeallocatedMockForOutboundJourney(bookingID uuid.UUID) {
+	m.On("OnSeatsDeallocated", bookingID, false).Return(nil)
+}
+
+func (m *BookingRepositoryMock) GivenOnSeatsDeallocatedMockForInboundJourney(bookingID uuid.UUID) {
+	m.On("OnSeatsDeallocated", bookingID, true).Return(nil)
+}
+
+func (m *FlightRepositoryMock) GivenReleaseSeatsMock() {
+	m.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
+}
+
+func (m *BookingRepositoryMock) GivenOnChangesCompletedMock() {
+	m.On("OnChangesCompleted", mock.Anything).Return(nil)
+}
+
+func (f *Fixture) WhenCreatePencilBookingIsCalled(requiredNumberOfSeats int, outboundLegs ...uuid.UUID) {
+	flightFactory := entities.NewFlightFactory(f.flightRepositoryMock)
+	bookingFactory := entities.NewBookingFactory(f.bookingRepositoryMock, flightFactory)
+	handler := NewPencilBookingHandler(bookingFactory, flightFactory)
+
+	dto := CreatePencilBookingDto{
+		RequiredNumberOfSeats: requiredNumberOfSeats,
+		OutboundJourneyLegs:   outboundLegs,
+	}
+	ctx := context.Background()
+	result, err := handler.CreatePencilBooking(ctx, dto)
+
+	f.result = result
+	f.err = err
+}
+
+func (f *Fixture) WhenSetInboundJourneyIsCalled(bookingID uuid.UUID, legs ...uuid.UUID) {
+	flightFactory := entities.NewFlightFactory(f.flightRepositoryMock)
+	bookingFactory := entities.NewBookingFactory(f.bookingRepositoryMock, flightFactory)
+	handler := NewPencilBookingHandler(bookingFactory, flightFactory)
+
+	dto := SetInboundJourneyDto{
+		BookingID:          bookingID,
+		InboundJourneyLegs: legs,
+	}
+	ctx := context.Background()
+	err := handler.SetInboundJourney(ctx, dto)
+	f.err = err
+}
+
+func (f *Fixture) HandlerShouldCompleteSuccessfully() {
+	assert.Nil(f.t, f.err)
+}
+
+func (f *Fixture) HandlerShouldReturnBookingID(bookingID uuid.UUID) {
+	assert.Equal(f.t, bookingID, f.result)
+}
+
+func (f *Fixture) HandlerShouldReturnError(message string) {
+	assert.Equal(f.t, message, f.err.Error())
+}
+
+func (m *BookingRepositoryMock) InitializeBookingShouldBeCalled(passengers int) {
+	expectedInitializationDto := contracts.InitializeBookingDto{
+		NumberOfPassengers: passengers,
+	}
+	m.AssertCalled(m.fixture.t, "InitializeBooking", expectedInitializationDto)
+}
+
+func (m *FlightRepositoryMock) LockSeatsShouldBeCalled(flightID uuid.UUID, passengers int) {
+	m.AssertCalled(m.fixture.t, "LockSeats", flightID, passengers)
+}
+
+func (m *FlightRepositoryMock) ReleaseSeatsShouldBeCalled(flightID uuid.UUID, seatLockIDs ...int) {
+	m.AssertCalled(m.fixture.t, "ReleaseSeats", flightID, seatLockIDs)
+}
+
+func (m *BookingRepositoryMock) OnSeatsAllocatedShouldBeCalledForOutboundJourney(
+	bookingID uuid.UUID, flightID uuid.UUID, seatLockIDs ...int) {
+	m.AssertCalled(m.fixture.t, "OnSeatsAllocated", bookingID, false, flightID, seatLockIDs)
+}
+func (m *BookingRepositoryMock) OnSeatsAllocatedShouldBeCalledForInboundJourney(
+	bookingID uuid.UUID, flightID uuid.UUID, seatLockIDs ...int) {
+	m.AssertCalled(m.fixture.t, "OnSeatsAllocated", bookingID, true, flightID, seatLockIDs)
+}
+
+func (m *BookingRepositoryMock) OnSeatsDeallocatedShouldBeCalledForOutboundJourney(bookingID uuid.UUID) {
+	m.AssertCalled(m.fixture.t, "OnSeatsDeallocated", bookingID, false)
+}
+
+func (m *BookingRepositoryMock) OnSeatsDeallocatedShouldBeCalledForInboundJourney(bookingID uuid.UUID) {
+	m.AssertCalled(m.fixture.t, "OnSeatsDeallocated", bookingID, true)
+}
+
+func (m *BookingRepositoryMock) OnChangesCompletedShouldBeCalledWith(dto contracts.BookingChanges) {
+	m.AssertCalled(m.fixture.t, "OnChangesCompleted", dto)
+}
+
+func (m *BookingRepositoryMock) OnChangesCompletedShouldNotBeCalled() {
+	m.AssertNotCalled(m.fixture.t, "OnChangesCompleted", mock.Anything)
+}
+
