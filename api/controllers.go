@@ -49,6 +49,38 @@ func Run() {
 		c.String(http.StatusOK, createdBookingID.String())
 	}))
 
+	type SetInboundJourneyRequest struct {
+		BookingID uuid.UUID `json:"bookingID" binding:"required"`
+		InboundJourneyLegs   []uuid.UUID `json:"inboundJourneyLegs" binding:"required"`
+	}
+
+	router.PUT("/booking/inbound", withJSONBody(func(c *gin.Context, body SetInboundJourneyRequest) {
+		err := handlers.PencilBookingHandler.SetInboundJourney(c, commands.SetInboundJourneyDto{
+			BookingID:						body.BookingID,
+			InboundJourneyLegs:   body.InboundJourneyLegs,
+		})
+
+		var seatsUnavailableError *commands.SeatsUnavailableError
+		var unknownFlightError *entities.FlightIDNotFoundError
+		var bookingNotFoundError *commands.BookingNotFoundError
+
+		if errors.As(err, &seatsUnavailableError) {
+			c.String(http.StatusConflict, "seat(s) no longer available")
+			return
+		} else if errors.As(err, &unknownFlightError) {
+			c.String(http.StatusBadRequest, "flight(s) not recognised")
+			return
+		} else if errors.As(err, &bookingNotFoundError) {
+			c.String(http.StatusBadRequest, "specified booking not found")
+			return
+		} else if err != nil {
+			genericErrorResponse(c, err)
+			return
+		}
+
+		c.String(http.StatusOK, "booking updated")
+	}))
+
 	err := router.Run("localhost:8080")
 	if err != nil {
 		log.Fatalf("API runtime error: %v", err)
