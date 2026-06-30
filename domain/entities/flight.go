@@ -48,10 +48,7 @@ func (flight Flight) TryBookSeats(ctx context.Context, journey *Journey) (bool, 
 		return false, err
 	}
 
-	err = journey.AllocateSeats(ctx, flight, result.ObtainedSeatLockIDs)
-	if err != nil {
-		return false, err
-	}
+	journey.AllocateSeats(ctx, flight, result.ObtainedSeatLockIDs)
 
 	if !result.ValidFlightID {
 		return false, &FlightIDNotFoundError{FlightID: flight.ID}

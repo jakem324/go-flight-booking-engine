@@ -22,14 +22,21 @@ func NewBookingRepository(db *pgxpool.Pool) BookingRepository {
 
 func (bookingRepository BookingRepository) InitializeBooking(
 	ctx context.Context,
-	dto contracts.InitializeBookingDto,
 ) (uuid.UUID, error) {
+	/*
 	command := `
 		insert into dbo.booking (number_of_passengers)
 		values($1)
 		returning id`
 	var result string
 	err := bookingRepository.db.QueryRow(ctx, command, dto.NumberOfPassengers).Scan(&result)
+	*/
+	command := `
+		insert into dbo.booking
+		default values
+		returning id`
+	var result string
+	err := bookingRepository.db.QueryRow(ctx, command).Scan(&result)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -66,12 +73,69 @@ func (bookingRepository BookingRepository) ValidateBooking(
 	}, nil
 }
 
-func (bookingRepository BookingRepository) OnSeatsAllocated(
+func (bookingRepository BookingRepository) SaveBooking(
+	ctx context.Context,
+	changes contracts.BookingChanges,
+) error {
+	err := bookingRepository.writeBookingDetails(ctx, changes)
+	if err != nil {
+		return err
+	}
+
+	var outboundJourneySeats []int32
+	for _, leg := range changes.OutboundLegs {
+		for _, seat := range leg.SeatLockIDs {
+			outboundJourneySeats = append(outboundJourneySeats, int32(seat))
+		}
+	}
+
+	var inboundJourneySeats []int32
+	for _, leg := range changes.InboundLegs {
+		for _, seat := range leg.SeatLockIDs {
+			inboundJourneySeats = append(inboundJourneySeats, int32(seat))
+		}
+	}
+
+	err = bookingRepository.allocateSeats(
+		ctx,
+		changes.ID,
+		false,
+		outboundJourneySeats,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = bookingRepository.allocateSeats(
+		ctx,
+		changes.ID,
+		true,
+		inboundJourneySeats,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (bookingRepository BookingRepository) writeBookingDetails(
+	ctx context.Context,
+	changes contracts.BookingChanges,
+) error {
+	command := `
+		update dbo.booking
+		set number_of_passengers = $1
+		where id=$2`
+	_, err := bookingRepository.db.Exec(ctx, command, changes.ID, changes.NumberOfPassengers)
+	return err
+}
+
+func (bookingRepository BookingRepository) allocateSeats(
 	ctx context.Context,
 	bookingID uuid.UUID,
 	isInboundJourney bool,
-	flightID uuid.UUID,
-	seatLockIDs []int) error {
+	seatLockIDs []int32) error {
 
 	convertedLockIDs := make([]int32, len(seatLockIDs))
 	for i, v := range seatLockIDs {
@@ -92,7 +156,7 @@ func (bookingRepository BookingRepository) OnSeatsAllocated(
 	return err
 }
 
-func (bookingRepository BookingRepository) OnSeatsDeallocated(
+func (bookingRepository BookingRepository) deallocateSeats(
 	ctx context.Context,
 	bookingID uuid.UUID,
 	isInboundJourney bool) {
@@ -106,12 +170,4 @@ func (bookingRepository BookingRepository) OnSeatsDeallocated(
 	if err != nil {
 		log.Printf("Warning: failed to deallocate seats from booking %v %v journey. Err: %v", bookingID, allocationType, err)
 	}
-}
-
-func (bookingRepository BookingRepository) OnChangesCompleted(
-	ctx context.Context,
-	changes contracts.BookingChanges,
-) error {
-	// Committing at the end for SQL DB implementation rendered unnecessary by incremental writing
-	return nil
 }

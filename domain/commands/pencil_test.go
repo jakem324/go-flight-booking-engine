@@ -16,8 +16,7 @@ All happy-path assertions:
   - Booking initialized via booking repo
   - Requested (available) seats locked via flight repo
   - Locked seats allocated via booking repo
-  - Changes finalized via booking repo
-  - Created booking ID returned
+  - Changes finalized via booking repo - Created booking ID returned
 */
 func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	// Arrange
@@ -48,8 +47,7 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
 	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
 	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 293, 572, 904)
-	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForOutboundJourney(bookingID)
-	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
+	fixture.bookingRepositoryMock.GivenSaveBookingMock()
 
 	// When
 	fixture.WhenCreatePencilBookingIsCalled(passengers, firstFlightID, secondFlightID)
@@ -57,12 +55,10 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	// Then
 	fixture.HandlerShouldCompleteSuccessfully()
 	fixture.HandlerShouldReturnBookingID(bookingID)
-	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled(passengers)
+	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled()
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, firstFlightID, 472, 673, 839)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, secondFlightID, 293, 572, 904)
-	fixture.bookingRepositoryMock.OnChangesCompletedShouldBeCalledWith(expectedChangesDto)
+	fixture.bookingRepositoryMock.SaveBookingShouldBeCalledWith(expectedChangesDto)
 }
 
 /*
@@ -95,9 +91,7 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	fixture.flightRepositoryMock.GivenLockSeatsMockWithUnavailableResult(thirdFlightID, passengers)
 	// ^^ Will cause "seat(s) no longer available" result (returned error is nil yet no seat locks were returned)
 	fixture.flightRepositoryMock.GivenReleaseSeatsMock()
-	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForOutboundJourney(bookingID)
-	fixture.bookingRepositoryMock.GivenOnSeatsDeallocatedMockForOutboundJourney(bookingID)
-	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
+	fixture.bookingRepositoryMock.GivenSaveBookingMock()
 
 	// fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
 
@@ -105,20 +99,16 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	fixture.WhenCreatePencilBookingIsCalled(passengers, firstFlightID, secondFlightID, thirdFlightID)
 
 	// Then
-	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled(passengers)
+	fixture.bookingRepositoryMock.InitializeBookingShouldBeCalled()
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForOutboundJourney(bookingID, secondFlightID, 582, 612, 783)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(thirdFlightID, passengers) // <-- availability failure here
-	// Seats deallocated for entire journey (including previous two flights)
-	fixture.bookingRepositoryMock.OnSeatsDeallocatedShouldBeCalledForOutboundJourney(bookingID)
 	// Successfully-locked seats from previous two flights now released
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)
 	// "seat(s) no longer available" returned as error
 	fixture.HandlerShouldReturnError("seat(s) no longer available")
-	fixture.bookingRepositoryMock.OnChangesCompletedShouldNotBeCalled()
+	fixture.bookingRepositoryMock.SaveBookingShouldNotBeCalled()
 }
 
 /*
@@ -157,8 +147,7 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	fixture.bookingRepositoryMock.GivenValidateBookingMock(bookingID, passengers)
 	fixture.flightRepositoryMock.GivenLockSeatsMock(firstFlightID, passengers, 472, 673, 839)
 	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 293, 572, 904)
-	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForInboundJourney(bookingID)
-	fixture.bookingRepositoryMock.GivenOnChangesCompletedMock()
+	fixture.bookingRepositoryMock.GivenSaveBookingMock()
 
 	// When
 	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID)
@@ -167,9 +156,7 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	fixture.HandlerShouldCompleteSuccessfully()
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, firstFlightID, 472, 673, 839)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, secondFlightID, 293, 572, 904)
-	fixture.bookingRepositoryMock.OnChangesCompletedShouldBeCalledWith(expectedChangesDto)
+	fixture.bookingRepositoryMock.SaveBookingShouldBeCalledWith(expectedChangesDto)
 }
 
 /*
@@ -191,7 +178,7 @@ func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 }
 
 /*
- Scenario: Set inbound journey when sets are unavailable on one or more flights
+ Scenario: Set inbound journey when seats are unavailable on one or more flights
  Assertions:
  - Requested seats locked via flight repo
  - Locked seats allocated via booking repo
@@ -217,9 +204,7 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	fixture.flightRepositoryMock.GivenLockSeatsMock(secondFlightID, passengers, 582, 612, 783)
 	fixture.flightRepositoryMock.GivenLockSeatsMockWithUnavailableResult(thirdFlightID, passengers)
 	// ^ Will cause "seat(s) no longer available" result (error is nil yet no seat locks were returned)
-	fixture.bookingRepositoryMock.GivenOnSeatsAllocatedMockForInboundJourney(bookingID)
 	fixture.flightRepositoryMock.GivenReleaseSeatsMock()
-	fixture.bookingRepositoryMock.GivenOnSeatsDeallocatedMockForInboundJourney(bookingID)
 
 	// When
 	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID, thirdFlightID)
@@ -227,12 +212,8 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	// Then
 	fixture.HandlerShouldReturnError("seat(s) no longer available")
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(firstFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(secondFlightID, passengers)
-	fixture.bookingRepositoryMock.OnSeatsAllocatedShouldBeCalledForInboundJourney(bookingID, secondFlightID, 582, 612, 783)
 	fixture.flightRepositoryMock.LockSeatsShouldBeCalled(thirdFlightID, passengers) // <-- availability failure here
-	// Seats deallocated for entire journey (including previous two flights)
-	fixture.bookingRepositoryMock.OnSeatsDeallocatedShouldBeCalledForInboundJourney(bookingID)
 	// Successfully-locked seats from previous two flights now released
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)

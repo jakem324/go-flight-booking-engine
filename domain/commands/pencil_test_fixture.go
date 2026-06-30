@@ -18,8 +18,8 @@ type BookingRepositoryMock struct {
 	contracts.BookingRepository
 }
 
-func (m *BookingRepositoryMock) InitializeBooking(ctx context.Context, dto contracts.InitializeBookingDto) (uuid.UUID, error) {
-	args := m.Called(dto)
+func (m *BookingRepositoryMock) InitializeBooking(ctx context.Context) (uuid.UUID, error) {
+	args := m.Called()
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
@@ -28,22 +28,7 @@ func (m *BookingRepositoryMock) ValidateBooking(ctx context.Context, ID uuid.UUI
 	return args.Get(0).(contracts.ValidateBookingResult), args.Error(1)
 }
 
-func (m *BookingRepositoryMock) OnSeatsAllocated(
-	ctx context.Context,
-	bookingID uuid.UUID,
-	isInboundJourney bool,
-	flightID uuid.UUID,
-	seatLockIDs []int) error {
-
-	args := m.Called(bookingID, isInboundJourney, flightID, seatLockIDs)
-	return args.Error(0)
-}
-
-func (m *BookingRepositoryMock) OnSeatsDeallocated(ctx context.Context, bookingID uuid.UUID, isInboundJourney bool) {
-	m.Called(bookingID, isInboundJourney)
-}
-
-func (m *BookingRepositoryMock) OnChangesCompleted(ctx context.Context, changes contracts.BookingChanges) error {
+func (m *BookingRepositoryMock) SaveBooking(ctx context.Context, changes contracts.BookingChanges) error {
 	args := m.Called(changes)
 	return args.Error(0)
 }
@@ -133,28 +118,12 @@ func (m *FlightRepositoryMock) GivenLockSeatsMockWithUnavailableResult(flightID 
 		SeatsAvailable: false}, nil)
 }
 
-func (m *BookingRepositoryMock) GivenOnSeatsAllocatedMockForOutboundJourney(bookingID uuid.UUID) {
-	m.On("OnSeatsAllocated", bookingID, false, mock.Anything, mock.Anything).Return(nil)
-}
-
-func (m *BookingRepositoryMock) GivenOnSeatsAllocatedMockForInboundJourney(bookingID uuid.UUID) {
-	m.On("OnSeatsAllocated", bookingID, true, mock.Anything, mock.Anything).Return(nil)
-}
-
-func (m *BookingRepositoryMock) GivenOnSeatsDeallocatedMockForOutboundJourney(bookingID uuid.UUID) {
-	m.On("OnSeatsDeallocated", bookingID, false).Return(nil)
-}
-
-func (m *BookingRepositoryMock) GivenOnSeatsDeallocatedMockForInboundJourney(bookingID uuid.UUID) {
-	m.On("OnSeatsDeallocated", bookingID, true).Return(nil)
-}
-
 func (m *FlightRepositoryMock) GivenReleaseSeatsMock() {
 	m.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
 }
 
-func (m *BookingRepositoryMock) GivenOnChangesCompletedMock() {
-	m.On("OnChangesCompleted", mock.Anything).Return(nil)
+func (m *BookingRepositoryMock) GivenSaveBookingMock() {
+	m.On("SaveBooking", mock.Anything).Return(nil)
 }
 
 func (f *Fixture) WhenCreatePencilBookingIsCalled(requiredNumberOfSeats int, outboundLegs ...uuid.UUID) {
@@ -199,11 +168,8 @@ func (f *Fixture) HandlerShouldReturnError(message string) {
 	assert.Equal(f.t, message, f.err.Error())
 }
 
-func (m *BookingRepositoryMock) InitializeBookingShouldBeCalled(passengers int) {
-	expectedInitializationDto := contracts.InitializeBookingDto{
-		NumberOfPassengers: passengers,
-	}
-	m.AssertCalled(m.fixture.t, "InitializeBooking", expectedInitializationDto)
+func (m *BookingRepositoryMock) InitializeBookingShouldBeCalled() {
+	m.AssertCalled(m.fixture.t, "InitializeBooking")
 }
 
 func (m *FlightRepositoryMock) LockSeatsShouldBeCalled(flightID uuid.UUID, passengers int) {
@@ -214,28 +180,11 @@ func (m *FlightRepositoryMock) ReleaseSeatsShouldBeCalled(flightID uuid.UUID, se
 	m.AssertCalled(m.fixture.t, "ReleaseSeats", flightID, seatLockIDs)
 }
 
-func (m *BookingRepositoryMock) OnSeatsAllocatedShouldBeCalledForOutboundJourney(
-	bookingID uuid.UUID, flightID uuid.UUID, seatLockIDs ...int) {
-	m.AssertCalled(m.fixture.t, "OnSeatsAllocated", bookingID, false, flightID, seatLockIDs)
-}
-func (m *BookingRepositoryMock) OnSeatsAllocatedShouldBeCalledForInboundJourney(
-	bookingID uuid.UUID, flightID uuid.UUID, seatLockIDs ...int) {
-	m.AssertCalled(m.fixture.t, "OnSeatsAllocated", bookingID, true, flightID, seatLockIDs)
+func (m *BookingRepositoryMock) SaveBookingShouldBeCalledWith(dto contracts.BookingChanges) {
+	m.AssertCalled(m.fixture.t, "SaveBooking", dto)
 }
 
-func (m *BookingRepositoryMock) OnSeatsDeallocatedShouldBeCalledForOutboundJourney(bookingID uuid.UUID) {
-	m.AssertCalled(m.fixture.t, "OnSeatsDeallocated", bookingID, false)
-}
-
-func (m *BookingRepositoryMock) OnSeatsDeallocatedShouldBeCalledForInboundJourney(bookingID uuid.UUID) {
-	m.AssertCalled(m.fixture.t, "OnSeatsDeallocated", bookingID, true)
-}
-
-func (m *BookingRepositoryMock) OnChangesCompletedShouldBeCalledWith(dto contracts.BookingChanges) {
-	m.AssertCalled(m.fixture.t, "OnChangesCompleted", dto)
-}
-
-func (m *BookingRepositoryMock) OnChangesCompletedShouldNotBeCalled() {
-	m.AssertNotCalled(m.fixture.t, "OnChangesCompleted", mock.Anything)
+func (m *BookingRepositoryMock) SaveBookingShouldNotBeCalled() {
+	m.AssertNotCalled(m.fixture.t, "SaveBooking", mock.Anything)
 }
 

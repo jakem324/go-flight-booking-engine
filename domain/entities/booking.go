@@ -2,7 +2,6 @@ package entities
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 
@@ -20,16 +19,14 @@ func NewBookingFactory(bookingRepository contracts.BookingRepository, flightFact
 }
 
 func (factory BookingFactory) NewBooking(ctx context.Context, numberOfPassengers int) (*Booking, error) {
-	id, err := factory.bookingRepository.InitializeBooking(ctx, contracts.InitializeBookingDto{
-		NumberOfPassengers: numberOfPassengers,
-	})
+	id, err := factory.bookingRepository.InitializeBooking(ctx)
 
 	if err != nil {
 		return &Booking{}, err
 	}
 
-	booking, err := factory.constructBooking(id, numberOfPassengers)
-	return booking, err
+	booking := factory.constructBooking(id, numberOfPassengers)
+	return booking, nil
 }
 
 func (factory BookingFactory) ExistingBooking(ctx context.Context, ID uuid.UUID) (*Booking, error) {
@@ -38,11 +35,11 @@ func (factory BookingFactory) ExistingBooking(ctx context.Context, ID uuid.UUID)
 		return nil, err
 	}
 
-	booking, err := factory.constructBooking(ID, result.NumberOfPassengers)
-	return booking, err
+	booking := factory.constructBooking(ID, result.NumberOfPassengers)
+	return booking, nil
 }
 
-func (factory BookingFactory) constructBooking(ID uuid.UUID, numberOfPassengers int) (*Booking, error) {
+func (factory BookingFactory) constructBooking(ID uuid.UUID, numberOfPassengers int) *Booking {
 	booking := Booking{}
 	booking.bookingRepository = factory.bookingRepository
 	booking.flightFactory = factory.flightFactory
@@ -55,7 +52,7 @@ func (factory BookingFactory) constructBooking(ID uuid.UUID, numberOfPassengers 
 		Parent: &booking,
 	}
 	booking.Inbound.isInboundJourney = true
-	return &booking, nil
+	return &booking
 }
 
 type Journey struct {
@@ -76,8 +73,6 @@ type Booking struct {
 }
 
 func (journey *Journey) ReleaseAllSeats(ctx context.Context) {
-	log.Printf("ReleaseAllSeats %v", journey.Parent.flightFactory)
-	journey.Parent.bookingRepository.OnSeatsDeallocated(ctx, journey.Parent.ID, journey.isInboundJourney)
 	for _, leg := range journey.legs {
 		flight := journey.Parent.flightFactory.NewFlight(leg.FlightID)
 		flight.ReleaseSeats(ctx, leg.SeatLockIDs)
@@ -86,22 +81,9 @@ func (journey *Journey) ReleaseAllSeats(ctx context.Context) {
 	journey.modified = true
 }
 
-func (journey *Journey) AllocateSeats(ctx context.Context, flight Flight, seatLockIDs []int) error {
-	err := journey.Parent.bookingRepository.OnSeatsAllocated(
-		ctx,
-		journey.Parent.ID,
-		journey.isInboundJourney,
-		flight.ID,
-		seatLockIDs)
-
-	if err != nil {
-		return err
-	}
-
+func (journey *Journey) AllocateSeats(ctx context.Context, flight Flight, seatLockIDs []int) {
 	journey.legs = append(journey.legs, contracts.JourneyLeg{FlightID: flight.ID, SeatLockIDs: seatLockIDs})
 	journey.modified = true
-
-	return nil
 }
 
 func (booking *Booking) FinalizeChanges(ctx context.Context) error {
@@ -118,7 +100,7 @@ func (booking *Booking) FinalizeChanges(ctx context.Context) error {
 		stagedChanges.OutboundLegs = booking.Outbound.legs
 	}
 
-	err := booking.bookingRepository.OnChangesCompleted(ctx, stagedChanges)
+	err := booking.bookingRepository.SaveBooking(ctx, stagedChanges)
 
 	if err != nil {
 		return err
