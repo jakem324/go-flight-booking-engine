@@ -44,18 +44,18 @@ func (handler BookingQueryHandler)	GetBookingSummary(ctx context.Context, ID uui
 			'BookingID', booking_id,
 			'NumberOfPassengers', number_of_passengers,
 			'OutboundJourneyLegs', coalesce(json_agg(json_build_object(
-				'DepartureDate', departure_date,
+				'DepartureDate', to_char(departure_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 				'DepartureAirportCode', departure_airport_code,
 				'DepartureTerminal', departure_airport_terminal,
-				'ArrivalDate', arrival_date,
+				'ArrivalDate', to_char(arrival_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 				'ArrivalAirportCode', arrival_airport_code,
 				'ArrivalTerminal', arrival_airport_terminal
 			)) filter (where allocation_type = 'outbound'), '[]'::json),
 			'InboundJourneyLegs', coalesce(json_agg(json_build_object(
-				'DepartureDate', departure_date,
+				'DepartureDate', to_char(departure_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 				'DepartureAirportCode', departure_airport_code,
 				'DepartureTerminal', departure_airport_terminal,
-				'ArrivalDate', arrival_date,
+				'ArrivalDate', to_char(arrival_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 				'ArrivalAirportCode', arrival_airport_code,
 				'ArrivalTerminal', arrival_airport_terminal
 			)) filter (where allocation_type = 'inbound'), '[]'::json)
@@ -65,7 +65,7 @@ func (handler BookingQueryHandler)	GetBookingSummary(ctx context.Context, ID uui
 	`
 
 	var jsonBytes []byte
-	
+
 	err := handler.db.QueryRow(ctx, query, ID).Scan(&jsonBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -77,5 +77,6 @@ func (handler BookingQueryHandler)	GetBookingSummary(ctx context.Context, ID uui
 	}
 
 	return &summary, nil
+
 }
 

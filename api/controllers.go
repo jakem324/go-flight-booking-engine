@@ -89,6 +89,7 @@ func Run() {
 			return
 		}
 
+		log.Printf("Getting booking summary for ID: %v", bookingID.String())
 		summary, err := handlers.BookingQueryHandler.GetBookingSummary(c, bookingID)	
 		if err != nil {
 			genericErrorResponse(c, err)
