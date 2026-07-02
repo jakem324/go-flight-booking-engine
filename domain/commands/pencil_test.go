@@ -9,15 +9,6 @@ import (
 	"booking.engine/domain/contracts"
 )
 
-/*
-TestCreatePencilBooking_AllSeatsAvailable
-Scenario: Create Pencil Booking when seats are available on specified flights
-All happy-path assertions:
-  - Booking initialized via booking repo
-  - Requested (available) seats locked via flight repo
-  - Locked seats allocated via booking repo
-  - Changes finalized via booking repo - Created booking ID returned
-*/
 func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	// Arrange
 	fixture := CreateFixture(t)
@@ -61,18 +52,6 @@ func TestCreatePencilBooking_AllSeatsAvailable(t *testing.T) {
 	fixture.bookingRepositoryMock.SaveBookingShouldBeCalledWith(expectedChangesDto)
 }
 
-/*
-TestCreatePencilBooking_PartialUnavailable
-Scenario: Create Pencil Booking when seats are unavailable on one or more specified flights
-All assertions:
-  - Booking initialized via booking repo
-  - Requested seats locked via flight repo
-  - Locked seats allocated via booking repo
-  - Seats subsequently deallocated when unavailability discovered on subsequent flight
-  - Deallocated seats relleased via flight repo
-  - Changes NOT finalized via booking repo
-  - Error returned stating seat(s) no longer available
-*/
 func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	// Arrange
 	fixture := CreateFixture(t)
@@ -93,8 +72,6 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	fixture.flightRepositoryMock.GivenReleaseSeatsMock()
 	fixture.bookingRepositoryMock.GivenSaveBookingMock()
 
-	// fixture.flightRepositoryMock.On("ReleaseSeats", mock.Anything, mock.Anything).Return(nil)
-
 	// When
 	fixture.WhenCreatePencilBookingIsCalled(passengers, firstFlightID, secondFlightID, thirdFlightID)
 
@@ -110,15 +87,6 @@ func TestCreatePencilBooking_PartialUnavailable(t *testing.T) {
 	fixture.HandlerShouldReturnError("seat(s) no longer available")
 	fixture.bookingRepositoryMock.SaveBookingShouldNotBeCalled()
 }
-
-/*
- Scenario: Set inbound journey with available seats
- Assertions:
- - Requested (available) seats locked via flight repo
- - Locked seats allocated via booking repo
- - Changes finalized via booking repo
- - Nil error returned
-*/
 
 func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	// Arrange
@@ -159,12 +127,6 @@ func TestSetInboundJourney_AllSeatsAvailable(t *testing.T) {
 	fixture.bookingRepositoryMock.SaveBookingShouldBeCalledWith(expectedChangesDto)
 }
 
-/*
- Scenario: Set inbound journey with invalid booking ID
- Assertions:
- - Invalid booking ID error returned
-*/
-
 func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 	// Arrange
 	fixture := CreateFixture(t)
@@ -176,17 +138,6 @@ func TestSetInboundJourney_InvalidBookingId(t *testing.T) {
 	fixture.WhenSetInboundJourneyIsCalled(bookingID, firstFlightID, secondFlightID)
 	fixture.HandlerShouldReturnError(fmt.Sprintf("booking not found: %v", bookingID))
 }
-
-/*
- Scenario: Set inbound journey when seats are unavailable on one or more flights
- Assertions:
- - Requested seats locked via flight repo
- - Locked seats allocated via booking repo
- - Seats subsequently deallocated when unavailability discovered on subsequent flight
- - Deallocated seats relleased via flight repo
- - Changes NOT finalized via booking repo
- - Error returned stating seat(s) no longer available
-*/
 
 func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	// Arrange
@@ -218,3 +169,4 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)
 }
+
