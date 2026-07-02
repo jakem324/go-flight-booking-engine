@@ -50,7 +50,7 @@ func Run() {
 	}))
 
 	type SetInboundJourneyRequest struct {
-		BookingID uuid.UUID `json:"bookingID" binding:"required"`
+		BookingID uuid.UUID `json:"bookingId" binding:"required"`
 		InboundJourneyLegs   []uuid.UUID `json:"inboundJourneyLegs" binding:"required"`
 	}
 
