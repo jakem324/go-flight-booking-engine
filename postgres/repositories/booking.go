@@ -118,7 +118,7 @@ func (bookingRepository BookingRepository) writeBookingDetails(
 		update dbo.booking
 		set number_of_passengers = $1
 		where id=$2`
-	_, err := bookingRepository.db.Exec(ctx, command, changes.ID, changes.NumberOfPassengers)
+	_, err := bookingRepository.db.Exec(ctx, command, changes.NumberOfPassengers, changes.ID)
 	return err
 }
 
