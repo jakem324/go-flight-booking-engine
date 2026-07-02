@@ -80,6 +80,23 @@ func Run() {
 
 		c.String(http.StatusOK, "booking updated")
 	}))
+	
+	router.GET("/booking/:id", func(c *gin.Context) {
+		bookingIDParam := c.Param("id")
+		bookingID, err := uuid.Parse(bookingIDParam)
+		if err != nil {
+			c.String(http.StatusBadRequest, "invalid UUID format for booking ID")
+			return
+		}
+
+		summary, err := handlers.BookingQueryHandler.GetBookingSummary(c, bookingID)	
+		if err != nil {
+			genericErrorResponse(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, summary)
+	})
 
 	err := router.Run("localhost:8080")
 	if err != nil {
