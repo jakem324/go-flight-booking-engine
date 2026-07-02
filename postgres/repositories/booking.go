@@ -23,14 +23,6 @@ func NewBookingRepository(db *pgxpool.Pool) BookingRepository {
 func (bookingRepository BookingRepository) InitializeBooking(
 	ctx context.Context,
 ) (uuid.UUID, error) {
-	/*
-	command := `
-		insert into dbo.booking (number_of_passengers)
-		values($1)
-		returning id`
-	var result string
-	err := bookingRepository.db.QueryRow(ctx, command, dto.NumberOfPassengers).Scan(&result)
-	*/
 	command := `
 		insert into dbo.booking
 		default values
@@ -156,18 +148,3 @@ func (bookingRepository BookingRepository) allocateSeats(
 	return err
 }
 
-func (bookingRepository BookingRepository) deallocateSeats(
-	ctx context.Context,
-	bookingID uuid.UUID,
-	isInboundJourney bool) {
-	// Fire-and-forget; failures unimportant
-	allocationType := "outbound"
-	if isInboundJourney {
-		allocationType = "inbound"
-	}
-	command := "delete from dbo.booking_flight_allocation where booking_id = $1 and allocation_type = $2"
-	_, err := bookingRepository.db.Exec(ctx, command, bookingID, bookingID, allocationType)
-	if err != nil {
-		log.Printf("Warning: failed to deallocate seats from booking %v %v journey. Err: %v", bookingID, allocationType, err)
-	}
-}
