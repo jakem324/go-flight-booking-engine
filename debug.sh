@@ -4,7 +4,8 @@ curl -X POST http://localhost:8080/booking \
   -d '{
     "requiredNumberOfSeats": 2,
     "outboundJourneyLegs": [
-      "921640d1-603d-4078-9be5-1afdc5b6f780",
-      "f7ca93e4-b4c0-43f6-92c0-7b7d941e853b"
+      "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c011",
+      "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c012"
     ]
   }'
+
