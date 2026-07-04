@@ -146,4 +146,3 @@ func (bookingRepository BookingRepository) allocateSeats(
 	_, err := bookingRepository.db.Exec(ctx, command, bookingID, allocationType, convertedLockIDs)
 	return err
 }
-

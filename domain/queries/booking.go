@@ -3,8 +3,9 @@
 package queries
 
 import (
-	"time"
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -27,4 +28,3 @@ type BookingSummary struct {
 type BookingQueries interface {
 	GetBookingSummary(ctx context.Context, ID uuid.UUID) (*BookingSummary, error)
 }
-

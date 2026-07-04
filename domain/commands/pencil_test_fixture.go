@@ -84,7 +84,7 @@ func (m *BookingRepositoryMock) GivenInitializeBookingMock(bookingID uuid.UUID) 
 func (m *BookingRepositoryMock) GivenValidateBookingMock(bookingID uuid.UUID, numberOfPassengers int) {
 	m.On("ValidateBooking", bookingID).Return(
 		contracts.ValidateBookingResult{
-			BookingExists: true,
+			BookingExists:      true,
 			NumberOfPassengers: numberOfPassengers,
 		}, nil)
 }
@@ -187,4 +187,3 @@ func (m *BookingRepositoryMock) SaveBookingShouldBeCalledWith(dto contracts.Book
 func (m *BookingRepositoryMock) SaveBookingShouldNotBeCalled() {
 	m.AssertNotCalled(m.fixture.t, "SaveBooking", mock.Anything)
 }
-

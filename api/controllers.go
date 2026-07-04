@@ -50,14 +50,14 @@ func Run() {
 	}))
 
 	type SetInboundJourneyRequest struct {
-		BookingID uuid.UUID `json:"bookingId" binding:"required"`
-		InboundJourneyLegs   []uuid.UUID `json:"inboundJourneyLegs" binding:"required"`
+		BookingID          uuid.UUID   `json:"bookingId" binding:"required"`
+		InboundJourneyLegs []uuid.UUID `json:"inboundJourneyLegs" binding:"required"`
 	}
 
 	router.PUT("/booking/inbound", withJSONBody(func(c *gin.Context, body SetInboundJourneyRequest) {
 		err := handlers.PencilBookingHandler.SetInboundJourney(c, commands.SetInboundJourneyDto{
-			BookingID:						body.BookingID,
-			InboundJourneyLegs:   body.InboundJourneyLegs,
+			BookingID:          body.BookingID,
+			InboundJourneyLegs: body.InboundJourneyLegs,
 		})
 
 		var seatsUnavailableError *commands.SeatsUnavailableError
@@ -80,7 +80,7 @@ func Run() {
 
 		c.String(http.StatusOK, "booking updated")
 	}))
-	
+
 	router.GET("/booking/:id", func(c *gin.Context) {
 		bookingIDParam := c.Param("id")
 		bookingID, err := uuid.Parse(bookingIDParam)
@@ -90,7 +90,7 @@ func Run() {
 		}
 
 		log.Printf("Getting booking summary for ID: %v", bookingID.String())
-		summary, err := handlers.BookingQueryHandler.GetBookingSummary(c, bookingID)	
+		summary, err := handlers.BookingQueryHandler.GetBookingSummary(c, bookingID)
 		if err != nil {
 			genericErrorResponse(c, err)
 			return

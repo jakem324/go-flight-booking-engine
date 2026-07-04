@@ -169,4 +169,3 @@ func TestSetInboundJourney_PartialUnavailable(t *testing.T) {
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(firstFlightID, 472, 673, 839)
 	fixture.flightRepositoryMock.ReleaseSeatsShouldBeCalled(secondFlightID, 582, 612, 783)
 }
-

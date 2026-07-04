@@ -3,11 +3,11 @@ package queryhandlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"encoding/json"
 
 	"booking.engine/domain/queries"
 )
@@ -20,7 +20,7 @@ func NewBookingQueryHandler(db *pgxpool.Pool) BookingQueryHandler {
 	return BookingQueryHandler{db: db}
 }
 
-func (handler BookingQueryHandler)	GetBookingSummary(ctx context.Context, ID uuid.UUID) (*queries.BookingSummary, error) {
+func (handler BookingQueryHandler) GetBookingSummary(ctx context.Context, ID uuid.UUID) (*queries.BookingSummary, error) {
 	query := `
 		with unique_legs as (
 			select
@@ -79,4 +79,3 @@ func (handler BookingQueryHandler)	GetBookingSummary(ctx context.Context, ID uui
 	return &summary, nil
 
 }
-

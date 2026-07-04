@@ -1,11 +1,12 @@
 package models
 
 import (
-	"time"
-	"github.com/google/uuid"
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -70,7 +71,7 @@ func GetBookingSummary(ctx context.Context, pool *pgxpool.Pool, bookingID uuid.U
 	`
 
 	var jsonBytes []byte
-	
+
 	err := pool.QueryRow(ctx, query, bookingID).Scan(&jsonBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
@@ -83,4 +84,3 @@ func GetBookingSummary(ctx context.Context, pool *pgxpool.Pool, bookingID uuid.U
 
 	return &summary, nil
 }
-

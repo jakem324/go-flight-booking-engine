@@ -13,8 +13,8 @@ import (
 
 	"booking.engine/domain/commands"
 	"booking.engine/domain/entities"
-	"booking.engine/postgres/repositories"
 	"booking.engine/postgres/queryhandlers"
+	"booking.engine/postgres/repositories"
 )
 
 type Handlers struct {
@@ -45,7 +45,7 @@ func setup(ctx context.Context) (Handlers, *pgxpool.Pool) {
 	pencilBookingHandler := commands.NewPencilBookingHandler(bookingFactory, flightFactory)
 	return Handlers{
 		PencilBookingHandler: pencilBookingHandler,
-		BookingQueryHandler: bookingQueryHandler,
+		BookingQueryHandler:  bookingQueryHandler,
 	}, dbpool
 }
 
