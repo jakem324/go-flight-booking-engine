@@ -1,5 +1,7 @@
+#!/bin/sh
+
 curl -X POST http://localhost:8080/booking \
-  -s -w "\n%{http_code}\n" \
+  -f -S -s \
   -H "Content-Type: application/json" \
   -d '{
     "requiredNumberOfSeats": 2,
