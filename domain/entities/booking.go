@@ -1,3 +1,5 @@
+// Package entities houses the domain entities; read-only models which house the core business logic relating to
+// the real-world object.
 package entities
 
 import (

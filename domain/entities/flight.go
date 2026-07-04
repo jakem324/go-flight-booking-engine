@@ -1,4 +1,3 @@
-// Package entities houses the domain objects
 package entities
 
 import (

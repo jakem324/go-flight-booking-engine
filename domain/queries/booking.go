@@ -1,4 +1,5 @@
-// Pacakge queries provides interfaces for read-only querying
+// Package queries provides interfaces for read-only querying. This bypasses the domain entities entirely,
+// so that fetching data for the presentation layer may be treated as an altogether separate concern.
 package queries
 
 import (

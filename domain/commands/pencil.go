@@ -1,4 +1,5 @@
-// Package commands houses the handlers for all commands within the domain
+// Package commands defines all of the command handlers within the domain. Command handlers
+// are responsible for orchestrating the required domain entities to invoke the relevant set of events.
 package commands
 
 import (
@@ -115,14 +116,14 @@ func (handler *PencilBookingHandler) tryBookSeats(ctx context.Context, journey *
 		flight := handler.flightFactory.NewFlight(proposedLeg)
 		seatsObtained, err := flight.TryBookSeats(ctx, journey)
 		if !seatsObtained || err != nil {
-			// NB: The release of the already-allocated seats could fail, but nothing
+			// NB for journey.ReleaseAllSeats() below: The release of the already-allocated seats could fail, but nothing
 			// can be done about it within this scope. The application will make its best
 			// effort to avoid leaving orphan seat locks, but a background service will need
 			// to clean up any stale bookings and release the seats that were locked and could
 			// not be released by this sync workflow. With this in mind, this workflow treats
 			// the release as a fire-and-forget, hence we are not awaiting any result object.
 
-			// (This workflow being able to lock a seat but unable to subsequently release the
+			// (An occurrence of this workflow being able to lock a seat but unable to subsequently release the
 			// lock is a one-in-a-million edge-case)
 			journey.ReleaseAllSeats(ctx)
 		}

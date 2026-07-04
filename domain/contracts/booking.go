@@ -1,5 +1,5 @@
-// Package contracts houses the interfaces which the corresponding entities will use to interface with
-// components outside of the domain boundary
+// Package contracts defines the interfaces between the domain entities and any dependencies external to the
+// domain boundary
 package contracts
 
 import (
