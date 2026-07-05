@@ -4,7 +4,7 @@ A GoLang API project implementing a small, vertical slice of functionality for a
 
 ## Quick-start
 
-Requires Go, and Docker, in addition to the `make` and `curl` utulities. To start the local dependencies, run:
+Requires Go, and Docker, in addition to the `make` and `curl` utilities. To start the local dependencies, run:
 
 ```
 make start-local-dependencies
@@ -41,7 +41,7 @@ flowchart BT
 
 ### Object types
 
-**Entities** represent the real-world objects applicable to the domain being implemented -- bookings and flights in this case. They implement the logic corresponding every action which can be taken for or by the given object within the business context.
+**Entities** represent the real-world objects applicable to the domain being implemented -- bookings and flights in this case. They implement the logic corresponding to every action which can be taken for or by the given object within the business context.
 
 **Commands** and **queries** represent the user access model. Commands define the actions that may be taken for or on behalf of any user (often involving one or more entities), and queries define the data that may be retrieved for said users.
 
@@ -63,4 +63,4 @@ Adjacent to this is `respositories` and `queryhandlers`, containing the implemen
 
 #### API
 
-Implements a Web API using the functionality from `domain` in conjuntion with the infrastructure in `postgres`. This API package is responsible for bundling the `postgres` implementation together with the `domain` to create a functioning runtime. Any alternate service layer -- a gRPC server, a server-side web app, a desktop app, etc -- can be implemented in the same way using this type of initialization.
+Implements a Web API using the functionality from `domain` in conjunction with the infrastructure in `postgres`. This API package is responsible for bundling the `postgres` implementation together with the `domain` to create a functioning runtime. Any alternate service layer -- a gRPC server, a server-side web app, a desktop app, etc -- can be implemented in the same way using this type of initialization.
