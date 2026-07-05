@@ -41,11 +41,11 @@ flowchart BT
 
 ### Object types
 
-**Entities** represent the real-world objects applicable to the domain being implemented -- bookings and flights in this case. They implement the logic corresponding to every action which can be taken for or by the given object within the business context.
+**Entities** represent the real-world objects applicable to the domain being implemented — bookings and flights in this case. They implement the logic corresponding to every action which can be taken for or by the given object within the business context.
 
 **Commands** and **queries** represent the user access model. Commands define the actions that may be taken for or on behalf of any user (often involving one or more entities), and queries define the data that may be retrieved for said users.
 
-In this arrangement, my approach -- based on the advice in the writings of Vaughn Vernon -- differs from many typical DDD implementations, in which entities are used data models while the command handlers implement the core business logic. This is a common anti-pattern known as domain model anemia, which my approach has been designed to avoid. As such, the entity acts as a write-only model; it does not interact with the repository layer until its functionality is called upon. The query handlers therefore bypass the entities entirely, returning their own read-model instead.
+In this arrangement, my approach — based on the advice in the writings of Vaughn Vernon — differs from many typical DDD implementations, in which entities are used data models while the command handlers implement the core business logic. This is a common anti-pattern known as domain model anemia, which my approach has been designed to avoid. As such, the entity acts as a write-only model; it does not interact with the repository layer until its functionality is called upon. The query handlers therefore bypass the entities entirely, returning their own read-model instead.
 
 ### Folders
 
@@ -53,7 +53,7 @@ The entire solution is maintained as a single Go module, but is separated into t
 
 #### Domain
 
-This dependency direction is maintained by placing the contracts -- the models and interfaces representing the repository layer -- in `domain/contracts`, which the supporting `postgres` packages implement. Adjacent to this, entities, commands, and queries can be found in their own respective folders.
+This dependency direction is maintained by placing the contracts — the models and interfaces representing the repository layer — in `domain/contracts`, which the supporting `postgres` packages implement. Adjacent to this, entities, commands, and queries can be found in their own respective folders.
 
 #### Postgres
 
@@ -63,4 +63,4 @@ Adjacent to this is `respositories` and `queryhandlers`, containing the implemen
 
 #### API
 
-Implements a Web API using the functionality from `domain` in conjunction with the infrastructure in `postgres`. This API package is responsible for bundling the `postgres` implementation together with the `domain` to create a functioning runtime. Any alternate service layer -- a gRPC server, a server-side web app, a desktop app, etc -- can be implemented in the same way using this type of initialization.
+Implements a Web API using the functionality from `domain` in conjunction with the infrastructure in `postgres`. This API package is responsible for bundling the `postgres` implementation together with the `domain` to create a functioning runtime. Any alternate service layer — a gRPC server, a server-side web app, a desktop app, etc — can be implemented in the same way using this type of initialization.
