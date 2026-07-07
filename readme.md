@@ -22,7 +22,7 @@ Curl scripts for each endpoint can be found in the `debug` folder.
 
 ## Architecture
 
-This project uses a Hexagonical architecture in which the core business rules are implemented by a centralized Domain library, on which all other supporting libraries (database layers, Web API projects, external services) depend. This dependency direction is achieved via Inversion of Control, so that the library containing the pure business logic remains completely unaware of the technical infrastructure which supports it.
+This project uses a Hexagonal architecture in which the core business rules are implemented by a centralized Domain library, on which all other supporting libraries (database layers, Web API projects, external services) depend. This dependency direction is achieved via Inversion of Control, so that the library containing the pure business logic remains completely unaware of the technical infrastructure which supports it.
 
 In this case, the supporting projects include a single Web API and a single access layer for a Postgres DB:
 
