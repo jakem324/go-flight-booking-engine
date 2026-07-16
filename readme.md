@@ -76,6 +76,57 @@ Example payload *:
 
 Returns a summary for the specified Pencil Booking.
 
+Example request:
+
+```
+GET /booking/3a021c8c-6200-40ac-928f-621e53d5d58f
+```
+
+Example response:
+
+```
+{
+  "bookingId": "3a021c8c-6200-40ac-928f-621e53d5d58f",
+  "numberOfPassengers": 2,
+  "outboundJourneyLegs": [
+    {
+      "departureDate": "2099-01-02T06:15:00Z",
+      "departureAirportCode": "MEL",
+      "departureTerminal": "T4",
+      "arrivalDate": "2099-01-02T07:40:00Z",
+      "arrivalAirportCode": "SYD",
+      "arrivalTerminal": "T2"
+    },
+    {
+      "departureDate": "2099-01-02T08:50:00Z",
+      "departureAirportCode": "SYD",
+      "departureTerminal": "T1",
+      "arrivalDate": "2099-01-02T16:40:00Z",
+      "arrivalAirportCode": "SIN",
+      "arrivalTerminal": "T3"
+    }
+  ],
+  "inboundJourneyLegs": [
+    {
+      "departureDate": "2099-01-02T09:20:00Z",
+      "departureAirportCode": "SYD",
+      "departureTerminal": "T1",
+      "arrivalDate": "2099-01-02T19:45:00Z",
+      "arrivalAirportCode": "CDG",
+      "arrivalTerminal": "T2E"
+    },
+    {
+      "departureDate": "2099-01-02T09:40:00Z",
+      "departureAirportCode": "MEL",
+      "departureTerminal": "T2",
+      "arrivalDate": "2099-01-02T11:05:00Z",
+      "arrivalAirportCode": "BNE",
+      "arrivalTerminal": "T1"
+    }
+  ]
+}
+```
+
 ## Architecture
 
 This project uses a Hexagonal architecture in which the core business rules are implemented by a centralized Domain library, on which all other supporting libraries (database layers, Web API projects, external services) depend. This dependency direction is achieved via Inversion of Control, so that the library containing the pure business logic remains completely unaware of the technical infrastructure which supports it.
