@@ -23,7 +23,6 @@ Curl scripts for each endpoint can be found in the `debug` folder.
 ## Domain terminology
 
 | Pencil Booking   | A recently-created booking which has not yet been finalized                         |
-|------------------|-------------------------------------------------------------------------------------|
 | Flight           | Refers to an individual, commercial flight                                          |
 | Journey          | An itinerary of multiple, connecting flights (or "legs")                            |
 | Outbound Journey | The main journey which the customer will use to reach their intended destination    |
