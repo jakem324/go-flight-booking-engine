@@ -70,7 +70,7 @@ Example payload *:
 }
 ```
 
-(*) Valid flight IDs must be used for the inbound and outbound journey legs. A number of flights are seeded in the Postgres DB, which can be seen in the migration script (postgres/migration/0000000008_seed_flights.up.sql)[https://github.com/jakem324/go-flight-booking-engine/blob/master/postgres/migration/0000000008_seed_flights.up.sql]
+(*) Valid flight IDs must be used for the inbound and outbound journey legs. A number of flights are seeded in the Postgres DB, which can be seen in the migration script [postgres/migration/0000000008_seed_flights.up.sql](https://github.com/jakem324/go-flight-booking-engine/blob/master/postgres/migration/0000000008_seed_flights.up.sql)
 
 ### GET /booking/:id
 
