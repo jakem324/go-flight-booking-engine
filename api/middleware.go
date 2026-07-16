@@ -23,6 +23,6 @@ func withJSONBody[T any](handler TypedHandler[T]) gin.HandlerFunc {
 }
 
 func genericErrorResponse(ctx *gin.Context, err error) {
-	log.Fatalf("Handler error: %v\n", err)
+	log.Printf("Handler error: %v\n", err)
 	ctx.Status(http.StatusInternalServerError)
 }
