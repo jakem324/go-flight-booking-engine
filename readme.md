@@ -20,6 +20,31 @@ make start-api
 
 Curl scripts for each endpoint can be found in the `debug` folder.
 
+## Domain terminology
+
+| Pencil Booking   | A recently-created booking which has not yet been finalized                         |
+|------------------|-------------------------------------------------------------------------------------|
+| Flight           | Refers to an individual, commercial flight                                          |
+| Journey          | An itinerary of multiple, connecting flights (or "legs")                            |
+| Outbound Journey | The main journey which the customer will use to reach their intended destination    |
+| Inbound Journey  | An optional journey which the customer may book for returning home at a future date |
+
+## API interface
+
+The web API provides three main endpoints:
+
+### POST /booking
+
+Creates a new Pencil Booking with a specified Outbound Journey. In a user interface, this would be used for the purpose of securing the necessary flight(s) for the journey once the user has selected them, so that the seats are not lost while the Inbound Journey is selected.
+
+### PUT /booking/inbound
+
+Patches an existing Pencil Booking with the selected Inbound Journey.
+
+### GET /booking/:id
+
+Returns a summary for the specified Pencil Booking.
+
 ## Architecture
 
 This project uses a Hexagonal architecture in which the core business rules are implemented by a centralized Domain library, on which all other supporting libraries (database layers, Web API projects, external services) depend. This dependency direction is achieved via Inversion of Control, so that the library containing the pure business logic remains completely unaware of the technical infrastructure which supports it.
