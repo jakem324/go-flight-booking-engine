@@ -38,9 +38,39 @@ The web API provides three main endpoints:
 
 Creates a new Pencil Booking with a specified Outbound Journey. In a user interface, this would be used for the purpose of securing the necessary flight(s) for the journey once the user has selected them, so that the seats are not lost while the Inbound Journey is selected.
 
+Example payload *:
+
+```
+{
+    "requiredNumberOfSeats": 2,
+    "outboundJourneyLegs": [
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c001",
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c002",
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c003"
+    ]
+}
+```
+
+Returns: The UUID of the newly-created Pencil Booking.
+
 ### PUT /booking/inbound
 
 Patches an existing Pencil Booking with the selected Inbound Journey.
+
+Example payload *:
+
+```
+{
+    "bookingId": "271cf3fc-6382-452e-95d4-450cbc639221",
+    "inboundJourneyLegs": [
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c004",
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c005",
+        "0d7f7d89-4c2e-47b4-8c1d-6b6cb4f2c006"
+    ]
+}
+```
+
+(*) Valid flight IDs must be used for the inbound and outbound journey legs. A number of flights are seeded in the Postgres DB, which can be seen in the migration script (postgres/migration/0000000008_seed_flights.up.sql)[https://github.com/jakem324/go-flight-booking-engine/blob/master/postgres/migration/0000000008_seed_flights.up.sql]
 
 ### GET /booking/:id
 
