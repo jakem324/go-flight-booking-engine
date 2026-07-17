@@ -166,7 +166,7 @@ This dependency direction is maintained by placing the contracts — the models 
 
 Contains a Postgres implementation of the contracts in `domain`. Any type of implementation can be used and added adjacent to the `postgres` implementation; it is the `api` package that decides which one to use. This implementation connects to the Postgres DB in Docker, initializing the database with the script in the `migration` folder.
 
-Adjacent to this is `respositories` and `queryhandlers`, containing the implementations for the repositories and query handlers defined respectively in `domain/contracts` and `domain/queryhandlers`.
+Adjacent to this is `repositories` and `queryhandlers`, containing the implementations for the repositories and query handlers defined respectively in `domain/contracts` and `domain/queries`.
 
 #### API
 
