@@ -1,6 +1,6 @@
 # GoLang Booking Engine API
 
-A GoLang API project featuring a small, vertical slice of functionality for a commercial airline flight booking system, in order to demonstrate the application of concepts from Domain-Driven Design (DDD) in GoLang, along with declarative, BDD-style tests. Written to serve as my personal portfolio and demonstrate my skill-set in coding, system design, TDD, and the aforementioned areas.
+A GoLang API project featuring a small, vertical slice of functionality for a fictional commercial airline flight booking system, in order to demonstrate the application of concepts from Domain-Driven Design (DDD) in GoLang, along with declarative, BDD-style tests. Written to serve as my personal portfolio and demonstrate my skill-set in coding, system design, TDD, and the aforementioned concepts.
 
 ## Quick-start
 
